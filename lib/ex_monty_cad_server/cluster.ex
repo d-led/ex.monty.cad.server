@@ -25,7 +25,10 @@ defmodule ExMontyCadServer.Cluster do
 
   The three kinds are the three things a run is made of: an experiment, the
   learning modules it steps, and the motor policies that decide where to sense
-  next. A provider is registered under one of them.
+  next. A provider is registered under one of them, and its answer is held to
+  `MontyCad.Plugin`'s contract: a description is a map, so nothing in the compiler
+  checks it, and a plugin that names itself unusably is reported with the field
+  rather than offered as if it were a choice.
 
   ## Placement is not decoration
 
@@ -123,11 +126,21 @@ defmodule ExMontyCadServer.Cluster do
 
   defp describe(pid) do
     case GenServer.call(pid, :describe, @timeout) do
-      %{} = describe -> {:ok, describe}
+      %{} = describe -> conform(describe)
       other -> {:error, ":describe answered #{inspect(other)} rather than a map"}
     end
   catch
     :exit, reason -> {:error, "the plugin did not answer: #{inspect(reason)}"}
+  end
+
+  # The plugin wrote a map, and a map is checked here rather than at the call that
+  # trusted it: a description missing a name or a placement is a plugin nobody can
+  # offer, and the sentence says which field.
+  defp conform(describe) do
+    case MontyCad.Plugin.conforms?(describe) do
+      :ok -> {:ok, describe}
+      {:error, reason} -> {:error, "the plugin describes itself wrongly: #{reason}"}
+    end
   end
 
   defp offered(kind) do

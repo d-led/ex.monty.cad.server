@@ -16,6 +16,23 @@ defmodule ExMontyCadServer.ClusterTest do
       assert {:ok, %{"placement" => :owner_only}} = provider.describe
     end
 
+    test "whose description cannot be used is reported with the field, not offered" do
+      description = %{
+        "name" => "nameless",
+        "kind" => :motor_policy,
+        "placement" => :owner_only,
+        "needs" => []
+      }
+
+      {:ok, _pid} =
+        TestPlugin.registered(:motor_policy, "nameless", describe: description)
+
+      assert {:ok, provider} = Cluster.lookup(:motor_policy, "nameless")
+      assert {:error, message} = provider.describe
+      assert message =~ "describes itself wrongly"
+      assert message =~ "`version` is missing"
+    end
+
     test "is listed among the providers of its kind" do
       {:ok, _pid} = TestPlugin.registered(:experiment, "evaluate_plate")
 
