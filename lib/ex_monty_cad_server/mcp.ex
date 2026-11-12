@@ -174,6 +174,11 @@ defmodule ExMontyCadServer.Mcp do
     and answers what Monty's own sensor module would perceive there: the node
     features a graph memory stores.
 
+    WHICH FEATURE IS WHICH: monty_cad_on_face says what a face belongs to,
+    monty_cad_features_near says what is around a point, and monty_cad_next_feature
+    says what is ahead of one along a direction. Those three are the questions a
+    policy asks before it chooses where to sense next.
+
     A MEMORY: monty_cad_library samples the part's surface, takes that percept at
     every visit, and writes the library a run loads — an object id, a node count,
     and how many nodes each feature family contributed.

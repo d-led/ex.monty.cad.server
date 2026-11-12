@@ -39,6 +39,8 @@ From this server, over all three:
 | --- | --- |
 | `monty_cad_brief` | what quiddity recognised: the feature families and how many of each, and the faces no feature claims |
 | `monty_cad_features_near` | which features sit within a radius of a point, nearest first — the query a policy choosing where to sense next needs |
+| `monty_cad_next_feature` | which features lie ahead along a direction, within a cone, with the distance and the angle off it |
+| `monty_cad_on_face` | which feature claims a face — or that it is body, refused or unexplained |
 | `monty_cad_sense` | the node features Monty's sensor module would store if it stood at a point and looked along a direction |
 | `monty_cad_library` | samples the surface, takes that percept at every visit, and writes the gzipped library a run loads |
 | `cad_plugin_list`, `cad_plugin_describe` | which experiments, learning modules and motor policies a cluster offers |

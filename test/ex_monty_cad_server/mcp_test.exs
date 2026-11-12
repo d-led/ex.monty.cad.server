@@ -200,6 +200,74 @@ defmodule ExMontyCadServer.McpTest do
     end
   end
 
+  describe "what is ahead" do
+    test "names the feature in the direction of travel" do
+      {reply, _state} = next_feature([0.0, 0.0, 1.0])
+
+      result = reply["result"]
+      assert result["isError"] == false
+      assert [feature] = result["structuredContent"]["features"]
+      assert feature["id"] == "bosses/0"
+      assert_in_delta feature["distance"], 13.0, 0.01
+      assert_in_delta feature["angle"], 0.0, 0.01
+    end
+
+    test "looking the other way finds nothing rather than the nearest thing behind" do
+      {reply, _state} = next_feature([0.0, 0.0, -1.0])
+
+      result = reply["result"]
+      assert result["structuredContent"]["features"] == []
+      assert text_of(result) =~ "none of them"
+    end
+
+    test "a direction of nought is refused, because a cone around it is everywhere" do
+      {reply, _state} = next_feature([0.0, 0.0, 0.0])
+
+      assert reply["result"]["isError"] == true
+      assert text_of(reply["result"]) =~ "nought has none"
+    end
+  end
+
+  describe "what a face is" do
+    test "a face a feature claims is named, with its family" do
+      {reply, _state} = on_face(7)
+
+      result = reply["result"]
+      assert result["isError"] == false
+      assert result["structuredContent"]["feature"] == "bosses/0"
+      assert result["structuredContent"]["family"] == "bosses"
+    end
+
+    test "a face no feature claims says which kind of unclaimed it is" do
+      {reply, _state} = on_face(8)
+
+      result = reply["result"]
+      assert result["structuredContent"]["feature"] == nil
+      assert result["structuredContent"]["owner"] == "unexplained"
+    end
+
+    test "a face the part does not have is refused, with the range that does" do
+      {reply, _state} = on_face(99)
+
+      assert reply["result"]["isError"] == true
+      assert text_of(reply["result"]) =~ "`face` is one of 0..8"
+    end
+  end
+
+  defp next_feature(direction) do
+    request("tools/call", %{
+      "name" => "monty_cad_next_feature",
+      "arguments" => %{"path" => @fixture, "point" => [15.0, 0.0, 0.0], "direction" => direction}
+    })
+  end
+
+  defp on_face(face) do
+    request("tools/call", %{
+      "name" => "monty_cad_on_face",
+      "arguments" => %{"path" => @fixture, "face" => face}
+    })
+  end
+
   defp features_near(radius) do
     request("tools/call", %{
       "name" => "monty_cad_features_near",
