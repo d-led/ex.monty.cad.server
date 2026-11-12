@@ -18,6 +18,11 @@ defmodule ExMontyCadServer.ClusterAcrossNodesTest do
   # each other.
   use ExUnit.Case, async: false
 
+  # A second node needs a distributed VM. `mix test` does not start one, so a
+  # plain run excludes these; `test_helper.exs` says why, and CI starts a VM with
+  # a name and asks for them.
+  @moduletag :distributed
+
   alias ExMontyCadServer.{Cluster, TestPlugin}
 
   test "a plugin offered by another node is found here, with its description" do
@@ -62,16 +67,28 @@ defmodule ExMontyCadServer.ClusterAcrossNodesTest do
   defp peer do
     start_distribution()
 
+    name = :"cad_peer_#{System.unique_integer([:positive])}"
+
     {:ok, _peer, peer_node} =
-      :peer.start_link(%{
-        name: :"cad_peer_#{System.unique_integer([:positive])}",
-        longnames: true
-      })
+      case domain() do
+        :longnames -> :peer.start_link(%{name: name, longnames: true})
+        :shortnames -> :peer.start_link(%{name: name, sname: true})
+      end
 
     :ok = :rpc.call(peer_node, :code, :add_paths, [:code.get_path()])
     {:ok, _apps} = :rpc.call(peer_node, Application, :ensure_all_started, [:ex_monty_cad_server])
 
     peer_node
+  end
+
+  # Which kind of name this node has, because a peer has to be reachable by it:
+  # `ex_monty_cad_test@127.0.0.1` reaches `peer@host.domain` and `cad_ci@host`
+  # reaches `peer@host`, while a mismatch is a peer that starts and never answers.
+  defp domain do
+    case :erlang.node() do
+      :nonode@nohost -> :longnames
+      node -> if String.contains?(Atom.to_string(node), "."), do: :longnames, else: :shortnames
+    end
   end
 
   # A peer is a node name, so the caller has to be one too. Started here rather

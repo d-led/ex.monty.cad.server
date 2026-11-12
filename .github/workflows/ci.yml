@@ -65,6 +65,11 @@ jobs:
           key: ${{ runner.os }}-otp${{ env.OTP_VERSION }}-${{ hashFiles('mix.lock') }}
       - run: mix deps.get
       - run: mix test
+      # The two tests that start a second node need a distributed VM, which
+      # `mix test` does not start; this one is started with a name. No `--cookie`:
+      # the peer inherits the default one, and a cookie only on this side is a
+      # peer whose handshake is refused.
+      - run: elixir --name cad_ci@127.0.0.1 -S mix test --only distributed
 
   types:
     runs-on: ubuntu-24.04
