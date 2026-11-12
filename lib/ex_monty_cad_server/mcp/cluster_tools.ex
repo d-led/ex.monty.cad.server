@@ -129,10 +129,16 @@ defmodule ExMontyCadServer.Mcp.ClusterTools do
     |> Enum.group_by(& &1.kind)
     |> Enum.sort()
     |> Enum.map_join("; ", fn {kind, of_kind} ->
-      names = of_kind |> Enum.map(& &1.name) |> Enum.uniq() |> Enum.join(", ")
+      names = of_kind |> Enum.map(&named/1) |> Enum.uniq() |> Enum.join(", ")
       "#{kind}: #{names}"
     end)
   end
+
+  # A plugin whose answer cannot be used is named as such in the sentence, not
+  # left beside the others as though it were a choice: a model reads this line,
+  # and calling it would fail for a reason that says nothing about the plugin.
+  defp named(%{name: name, describe: {:ok, _describe}}), do: name
+  defp named(%{name: name, describe: {:error, _reason}}), do: name <> " (cannot be used)"
 
   defp spoken({:ok, describe}) do
     describe
@@ -140,7 +146,7 @@ defmodule ExMontyCadServer.Mcp.ClusterTools do
     |> Enum.map_join(", ", fn {key, value} -> "#{key} #{inspect(value)}" end)
   end
 
-  defp spoken({:error, reason}), do: "it did not answer: #{reason}"
+  defp spoken({:error, reason}), do: "it cannot be used: #{reason}"
 
   defp encode(provider) do
     %{

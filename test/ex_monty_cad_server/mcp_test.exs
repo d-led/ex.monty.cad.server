@@ -172,6 +172,23 @@ defmodule ExMontyCadServer.McpTest do
   end
 
   describe "the cluster" do
+    test "names a plugin whose answer cannot be used as such" do
+      description = %{"name" => "nameless", "kind" => :motor_policy, "placement" => :owner_only}
+
+      {:ok, _pid} =
+        ExMontyCadServer.TestPlugin.registered(:motor_policy, "nameless", describe: description)
+
+      {reply, _state} = call_tool("cad_plugin_list", %{"kind" => "motor_policy"})
+
+      assert text_of(reply["result"]) =~ "nameless (cannot be used)"
+
+      {reply, _state} =
+        call_tool("cad_plugin_describe", %{"name" => "nameless", "kind" => "motor_policy"})
+
+      assert text_of(reply["result"]) =~ "it cannot be used"
+      assert text_of(reply["result"]) =~ "`version` is missing"
+    end
+
     test "lists what is offered, by kind" do
       {:ok, _pid} = ExMontyCadServer.TestPlugin.registered(:motor_policy, "follow_chamfers")
 
