@@ -1,0 +1,24 @@
+ExMontyCadServer: a Model Context Protocol server for CAD.
+
+Copyright (c) Dmitry Ledentsov and contributors.
+
+This Source Code Form is subject to the terms of the Mozilla Public License, v.
+2.0. If a copy of the MPL was not distributed with this file, You can obtain one
+at https://mozilla.org/MPL/2.0/.
+
+It builds on work by others, whose licences it keeps:
+
+  * Monty, the Thousand Brains Project's sensorimotor learning system
+    (https://github.com/thousandbrainsproject/tbp.monty), MIT, Copyright (c) the
+    Thousand Brains Project. Reached through `ex_tbp_monty_core`; a percept this
+    server answers with is made by Monty's own observation processor.
+  * quiddity — feature recognition and exact B-rep geometry for STEP files
+    (https://github.com/pzfreo/quiddity), Apache License 2.0, Copyright (c) the
+    quiddity authors. Used as a dependency through `ex_quiddity`.
+  * cadmpeg — native CAD files into one format-neutral document
+    (https://github.com/cadmpeg/cadmpeg), Apache License 2.0, Copyright (c) the
+    cadmpeg authors. Used as a dependency through `ex_cadmpeg`.
+
+The STEP fixture under `test/fixtures/` is taken from quiddity's own test suite,
+which Apache License 2.0 permits with this notice; `test/fixtures/README.md`
+says which part it is and where the test stands its sensor.

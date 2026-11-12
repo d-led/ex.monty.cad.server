@@ -1,0 +1,15 @@
+# What the image does not need to see: the host's build tree, its caches, and
+# anything with a credential in it.
+_build
+cover
+deps
+doc
+tmp
+.git
+.github
+LICENSE
+NOTICE
+README.md
+erl_crash.dump
+*.beam
+.DS_Store
