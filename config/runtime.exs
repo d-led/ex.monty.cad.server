@@ -53,6 +53,19 @@ if config_env() == :prod do
 
   host = System.get_env("PHX_HOST") || "example.com"
 
+  # `DATABASE_URL` names a Postgres, SQLite in a file otherwise, so the release
+  # runs as one process on a machine with nothing else, and a deployment that has
+  # a database server says where it is. Ecto binds an adapter to a repo when the
+  # repo is compiled, so the choice is between two compiled repos and everything
+  # that needs one — the application, the migrator — is given the same answer.
+  repo = ExMontyCadServer.Database.repo_module()
+
+  config :ex_monty_cad_server, :repo, repo
+  # What `mix ecto.*` would migrate inside the release: the same answer the boot
+  # gives, rather than the Postgres the application was written around.
+  config :ex_monty_cad_server, ecto_repos: [repo]
+  config :ex_monty_cad_server, repo, ExMontyCadServer.Database.repo()
+
   config :ex_monty_cad_server, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   config :ex_monty_cad_server, ExMontyCadServerWeb.Endpoint,

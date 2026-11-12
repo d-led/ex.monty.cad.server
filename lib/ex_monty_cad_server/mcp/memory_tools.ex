@@ -10,6 +10,8 @@ defmodule ExMontyCadServer.Mcp.MemoryTools do
 
   alias MontyCad.{Percept, Training}
 
+  alias ExMontyCadServer.Catalogue
+
   # How far a proximity query looks when it is not told, and how many features it
   # answers with: enough to reach the neighbouring features of an ordinary part,
   # and few enough to read.
@@ -191,6 +193,25 @@ defmodule ExMontyCadServer.Mcp.MemoryTools do
         "required" => ["path", "object", "out"]
       },
       "annotations" => %{"idempotentHint" => false}
+    },
+    %{
+      "name" => "monty_cad_libraries",
+      "title" => "What has this server already learned?",
+      "description" =>
+        "Answers the memories this server has written, newest first: the object " <>
+          "each is labelled as, the part it was made from, how many nodes it holds, " <>
+          "and where the file is. This is the question to ask before sampling a " <>
+          "part again.",
+      "inputSchema" => %{
+        "type" => "object",
+        "properties" => %{
+          "limit" => %{
+            "type" => "integer",
+            "description" => "the most memories to answer with (default 20)"
+          }
+        }
+      },
+      "annotations" => %{"readOnlyHint" => true}
     }
   ]
 
@@ -215,6 +236,8 @@ defmodule ExMontyCadServer.Mcp.MemoryTools do
   def call("monty_cad_on_face", arguments, state), do: on_face(arguments, state)
 
   def call("monty_cad_library", arguments, state), do: library(arguments, state)
+
+  def call("monty_cad_libraries", arguments, state), do: libraries(arguments, state)
 
   def call(name, _arguments, state), do: {:error, "no such tool: #{name}", state}
 
@@ -274,11 +297,13 @@ defmodule ExMontyCadServer.Mcp.MemoryTools do
          {:ok, out} <- required(arguments, "out"),
          {:ok, part} <- open(path),
          {:ok, written} <- write(part, object, out, arguments) do
+      recorded = record(part, path, written)
+
       {:ok,
        %{
          text: """
          Wrote #{written.nodes} nodes to #{written.path} as "#{written.object_id}", from \
-         #{written.visited} visits (#{written.skipped} skipped)#{families_sentence(Map.to_list(written.families))}.
+         #{written.visited} visits (#{written.skipped} skipped)#{families_sentence(Map.to_list(written.families))}#{recorded_sentence(recorded)}.
          """,
          structured: Map.put(written, :path, out)
        }, state}
@@ -286,6 +311,65 @@ defmodule ExMontyCadServer.Mcp.MemoryTools do
       {:error, message} -> {:error, message, state}
     end
   end
+
+  # The library file is written whether or not the catalogue takes it, so a
+  # database that refuses is a sentence in the answer rather than a lost file.
+  defp record(part, path, written) do
+    attributes = %{
+      path: path,
+      name: Path.basename(path),
+      digest: written.source_sha256,
+      faces: Quiddity.Part.face_count(part),
+      families: written.families
+    }
+
+    with {:ok, recorded_part} <- Catalogue.record_part(attributes),
+         {:ok, _library} <- Catalogue.record_library(recorded_part, written) do
+      :ok
+    else
+      {:error, changeset} -> {:error, describe_errors(changeset)}
+    end
+  end
+
+  defp describe_errors(%Ecto.Changeset{errors: errors}) do
+    Enum.map_join(errors, ", ", fn {field, {message, _opts}} -> "#{field} #{message}" end)
+  end
+
+  defp libraries(arguments, state) do
+    limit = Map.get(arguments, "limit") || 20
+    memories = Catalogue.libraries(limit)
+
+    {:ok,
+     %{
+       text: """
+       #{length(memories)} memory(s) recorded#{if memories == [], do: " — none has been written yet", else: ": " <> memories_sentence(memories)}
+       """,
+       structured: %{"libraries" => Enum.map(memories, &describe_memory/1)}
+     }, state}
+  end
+
+  defp describe_memory(library) do
+    %{
+      "object_id" => library.object_id,
+      "path" => library.path,
+      "nodes" => library.nodes,
+      "visited" => library.visited,
+      "part" => library.part && library.part.name,
+      "part_faces" => library.part && library.part.faces,
+      "recorded_at" => library.inserted_at
+    }
+  end
+
+  defp memories_sentence(memories) do
+    Enum.map_join(memories, "; ", fn library ->
+      "#{library.object_id} (#{library.nodes} nodes) from #{library.part && library.part.name}"
+    end)
+  end
+
+  defp recorded_sentence(:ok), do: ". It is in the catalogue"
+
+  defp recorded_sentence({:error, reason}),
+    do: ". It is not in the catalogue, because #{reason}"
 
   defp open(path) do
     case Quiddity.open(path) do

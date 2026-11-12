@@ -76,6 +76,28 @@ defmodule ExMontyCadServer.ClusterAcrossNodesTest do
       end
 
     :ok = :rpc.call(peer_node, :code, :add_paths, [:code.get_path()])
+
+    # The peer loads no configuration of its own, and this application now starts
+    # a database: told nothing, it would open the file-backed default and every
+    # library write here would be answered from another store. So it is given
+    # this node's repo and this node's connection — without the sandbox pool,
+    # because a peer checks nothing out.
+    config = ExMontyCadServer.Repo.config() |> Keyword.delete(:pool) |> Keyword.put(:pool_size, 2)
+
+    :ok =
+      :rpc.call(peer_node, Application, :put_env, [
+        :ex_monty_cad_server,
+        ExMontyCadServer.Repo.Postgres,
+        config
+      ])
+
+    :ok =
+      :rpc.call(peer_node, Application, :put_env, [
+        :ex_monty_cad_server,
+        :repo,
+        ExMontyCadServer.Repo.Postgres
+      ])
+
     {:ok, _apps} = :rpc.call(peer_node, Application, :ensure_all_started, [:ex_monty_cad_server])
 
     peer_node

@@ -1,15 +1,24 @@
 defmodule ExMontyCadServer.MixProject do
   use Mix.Project
 
+  # The same number `VERSION` carries: the release workflow compares the two, and
+  # a tag that disagrees with either is refused rather than published.
+  @version "0.1.0"
+
   def project do
     [
       app: :ex_monty_cad_server,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.17",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
+      # What `mix ecto.*` acts on, and the timestamp type the generators use. The
+      # name is the Postgres repo because that is the one a checkout and CI have;
+      # `config/runtime.exs` replaces it with whatever the release chose.
+      ecto_repos: [ExMontyCadServer.Repo.Postgres],
+      generators: [timestamp_type: :utc_datetime],
       # The Mix task calls `Mix.Task` and `Mix.raise`, and the test support calls
       # `ExUnit`'s macros; neither application is in a default PLT, and without
       # them every one of those calls is reported as an unknown function.
@@ -64,6 +73,11 @@ defmodule ExMontyCadServer.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
+      # The database: the same Postgres and Ecto the Monty app keeps its runs in,
+      # and the same SQLite fallback so a release still works without a server.
+      {:ecto_sql, "~> 3.13"},
+      {:postgrex, ">= 0.0.0"},
+      {:ecto_sqlite3, "~> 0.26"},
       # The three engines the tools are made of. `ex_cadmpeg` reads the file,
       # `ex_quiddity` names what is in it and answers the geometry, and
       # `ex_monty_cad` turns a frame into the percept Monty's sensor modules
@@ -86,7 +100,12 @@ defmodule ExMontyCadServer.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get"],
+      setup: ["deps.get", "ecto.setup"],
+      "ecto.setup": ["ecto.create", "ecto.migrate"],
+      "ecto.reset": ["ecto.drop", "ecto.setup"],
+      # A suite runs against a database that exists and is migrated: the same
+      # two steps the Monty app's test alias takes before `test`.
+      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]
     ]
   end

@@ -17,8 +17,8 @@ defmodule ExMontyCadServer.TestPlugin do
   }
 
   def start_link(opts \\ []) do
-    {describe, opts} = Keyword.pop(opts, :describe, @describe)
-    GenServer.start_link(__MODULE__, describe, Keyword.put_new(opts, :name, __MODULE__))
+    {describe, _opts} = Keyword.pop(opts, :describe, @describe)
+    GenServer.start_link(__MODULE__, describe)
   end
 
   @doc """
@@ -28,6 +28,7 @@ defmodule ExMontyCadServer.TestPlugin do
   it, so it cannot be linked to that call's process; and the cluster name is the
   registration, so the process itself needs none.
   """
+
   @spec start_unlinked(keyword()) :: {:ok, pid()}
   def start_unlinked(opts \\ []) do
     {describe, _opts} = Keyword.pop(opts, :describe, @describe)

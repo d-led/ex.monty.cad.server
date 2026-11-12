@@ -1,5 +1,5 @@
 defmodule ExMontyCadServer.McpTest do
-  use ExUnit.Case, async: true
+  use ExMontyCadServer.DataCase, async: true
 
   alias ExMontyCadServer.Mcp
 
@@ -135,6 +135,39 @@ defmodule ExMontyCadServer.McpTest do
       assert result["structuredContent"]["object_id"] == "plate"
       assert result["structuredContent"]["nodes"] > 0
       assert File.exists?(out)
+    end
+
+    test "answers what has been learned already, newest first" do
+      out =
+        Path.join(
+          System.tmp_dir!(),
+          "mcp_libraries_#{System.unique_integer([:positive])}.jsonl.gz"
+        )
+
+      {_reply, state} =
+        call_tool("monty_cad_library", %{
+          "path" => @fixture,
+          "object" => "plate",
+          "out" => out,
+          "spacing" => 5.0,
+          "limit" => 6
+        })
+
+      {reply, _state} = call_tool("monty_cad_libraries", %{}, state)
+
+      result = reply["result"]
+      assert result["isError"] == false, text_of(result)
+
+      assert [memory] = result["structuredContent"]["libraries"]
+      assert memory["object_id"] == "plate"
+      assert memory["part"] == Path.basename(@fixture)
+      assert memory["nodes"] > 0
+    end
+
+    test "says plainly that nothing has been learned yet" do
+      {reply, _state} = call_tool("monty_cad_libraries", %{})
+
+      assert text_of(reply["result"]) =~ "0 memory(s) recorded — none has been written yet"
     end
   end
 
@@ -289,6 +322,21 @@ defmodule ExMontyCadServer.McpTest do
     {reply, state} = Mcp.handle(Jason.encode!(message), Mcp.fresh())
 
     {if(reply, do: Jason.decode!(reply)), state}
+  end
+
+  # A tool call with the session it happens in, which a second call in the same
+  # test needs: what the first one learned is state, not a database lookup.
+  defp call_tool(name, arguments, state \\ Mcp.fresh()) do
+    message = %{
+      "jsonrpc" => "2.0",
+      "method" => "tools/call",
+      "id" => 1,
+      "params" => %{"name" => name, "arguments" => arguments}
+    }
+
+    {reply, state} = Mcp.handle(Jason.encode!(message), state)
+
+    {Jason.decode!(reply), state}
   end
 
   defp text_of(result) do

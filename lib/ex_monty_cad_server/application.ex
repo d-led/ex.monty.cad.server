@@ -17,6 +17,10 @@ defmodule ExMontyCadServer.Application do
       # node goes down. Written as a child spec of its own because `:pg` has no
       # `child_spec/1` — it is an OTP module, not an Elixir one.
       %{id: :pg, start: {:pg, :start_link, [:ex_monty_cad_server]}},
+      # The catalogue: the parts this server has made a memory of and the
+      # memories it wrote. Whichever repo `DATABASE_URL` chose at boot; it starts
+      # before anything that would read or write it.
+      ExMontyCadServer.Database.repo_module(),
       # What the server remembers between HTTP requests: the documents cadmpeg
       # has opened and the parts quiddity has read. A transport that is a pipe
       # keeps its own state in its own loop; a request cannot.

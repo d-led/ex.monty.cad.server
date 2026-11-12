@@ -1,5 +1,21 @@
 import Config
 
+# The suite runs on the Postgres of the CI service, partitioned by
+# `MIX_TEST_PARTITION`. `ExMontyCadServer.Database.repo_module/0` follows
+# `DATABASE_URL` when nothing names a repo, which in a test would be a file.
+config :ex_monty_cad_server, :repo, ExMontyCadServer.Repo.Postgres
+
+config :ex_monty_cad_server, ExMontyCadServer.Repo.Postgres,
+  username: "postgres",
+  password: "postgres",
+  hostname: "localhost",
+  database: "ex_monty_cad_server_test#{System.get_env("MIX_TEST_PARTITION")}",
+  pool: Ecto.Adapters.SQL.Sandbox,
+  # A suite wants the opposite of a release: a statement that hangs should fail
+  # the test that issued it rather than wait the half-minute a write may take.
+  timeout: 15_000,
+  pool_size: System.schedulers_online() * 2
+
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :ex_monty_cad_server, ExMontyCadServerWeb.Endpoint,
