@@ -1,0 +1,72 @@
+name: docs
+
+# The documentation, published where a person can read it: GitHub Pages, because
+# this repository is an application and not a Hex package — there is no HexDocs
+# page for a server. `doc/` is what `mix docs` builds, and it includes the tool
+# reference generated from the catalogue and the `llms.txt` ExDoc writes, which is
+# the same surface for a model that has no MCP client to ask.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One publication at a time: a second push while the first is deploying would
+# otherwise publish the older tree last.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  ELIXIR_VERSION: "1.20.5"
+  OTP_VERSION: "29.1"
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+          otp-version: ${{ env.OTP_VERSION }}
+      # The docs are built from compiled modules, and three of those carry Rust:
+      # without the toolchain, `mix docs` fails in the dependencies.
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+            priv/native
+          key: ${{ runner.os }}-otp${{ env.OTP_VERSION }}-docs-${{ hashFiles('mix.lock') }}
+      - run: mix deps.get
+        env:
+          MIX_ENV: dev
+      # A page generated from a catalogue that has drifted is a page that lies, so
+      # the generated reference is checked before it is published.
+      - run: mix ex_monty_cad_server.tools_doc --check
+        env:
+          MIX_ENV: dev
+      - run: mix docs
+        env:
+          MIX_ENV: dev
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: doc
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

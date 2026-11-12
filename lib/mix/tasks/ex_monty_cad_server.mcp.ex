@@ -12,6 +12,10 @@ defmodule Mix.Tasks.ExMontyCadServer.Mcp do
   It refuses to start when an engine is missing rather than answering every tool
   call with an error: a server that cannot read a CAD file is not this server,
   and saying so at launch is cheaper than saying it on the third question.
+
+  The checks and the loop are `ExMontyCadServer.Mcp.Serve.serve!/0`, which is also
+  what a release's `bin/ex_monty_cad_server mcp` runs: a checkout and a release
+  cannot disagree about when there is no server to start.
   """
 
   use Mix.Task
@@ -19,21 +23,6 @@ defmodule Mix.Tasks.ExMontyCadServer.Mcp do
   @impl true
   def run(_args) do
     Mix.Task.run("app.start")
-
-    engines = [
-      {"quiddity", Quiddity.Native.loaded?()},
-      {"cadmpeg", Cadmpeg.loaded?()}
-    ]
-
-    case Enum.reject(engines, fn {_name, loaded?} -> loaded? end) do
-      [] ->
-        :ok
-
-      missing ->
-        names = Enum.map_join(missing, ", ", fn {name, _} -> name end)
-        Mix.raise("the #{names} NIF is not built, so there is no engine to answer with")
-    end
-
-    ExMontyCadServer.Mcp.serve()
+    ExMontyCadServer.Mcp.Serve.serve!()
   end
 end

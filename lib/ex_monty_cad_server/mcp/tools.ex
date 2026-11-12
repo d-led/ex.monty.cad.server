@@ -55,18 +55,25 @@ defmodule ExMontyCadServer.Mcp.Tools do
     end
   end
 
-  # The order is the order of the question: what this server adds first, then the
-  # geometry it was built from, then the reader underneath both. A name is looked
-  # up in each engine's own catalogue, because that is the only thing all three
-  # agree on — cadmpeg has no `names/0`, and inventing one here would be a second
-  # list to keep in step.
-  defp engine(name) do
-    Enum.find_value(sources(), :none, fn {engine, module} ->
+  @doc """
+  Which engine answers a tool name.
+
+  The order is the order of the question: what this server adds first, then the
+  geometry it was built from, then the reader underneath both. A name is looked
+  up in each engine's own catalogue, because that is the only thing all three
+  agree on — cadmpeg has no `names/0`, and inventing one here would be a second
+  list to keep in step.
+  """
+  @spec engine(String.t()) :: {atom(), module()} | :none
+  def engine(name) do
+    Enum.find_value(engines(), :none, fn {engine, module} ->
       if name in names_of(module), do: {engine, module}
     end)
   end
 
-  defp sources do
+  @doc "The engines, in the order a tool name is looked up in."
+  @spec engines() :: [{atom(), module()}]
+  def engines do
     [
       monty_cad: MemoryTools,
       cluster: ClusterTools,

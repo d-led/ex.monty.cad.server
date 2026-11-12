@@ -1,0 +1,63 @@
+name: release
+
+# A tag builds the release and attaches it to a GitHub release. Nothing is
+# published anywhere else: this is an application, not a Hex package, and a
+# release is the thing a deployment runs.
+#
+# The archive is built on Linux for Linux, because a release is not portable: the
+# two Rust engines in it are compiled for the machine that built it. A macOS or
+# Windows release is built on macOS or Windows, and this file is where that would
+# be added.
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  MIX_ENV: prod
+  ELIXIR_VERSION: "1.20.5"
+  OTP_VERSION: "29.1"
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      # The tag and the two files that carry the version are compared before
+      # anything is built: a release whose three numbers disagree is a release
+      # nobody can say the version of.
+      - name: The tag, VERSION and mix.exs agree
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          file="$(cat VERSION)"
+          mix="$(grep -oE '@version "[^"]+"' mix.exs | head -1 | cut -d'"' -f2)"
+          echo "tag=$tag VERSION=$file mix.exs=$mix"
+          test "$tag" = "$file" || { echo "VERSION says $file, the tag says $tag" >&2; exit 1; }
+          test "$tag" = "$mix" || { echo "mix.exs says $mix, the tag says $tag" >&2; exit 1; }
+
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+          otp-version: ${{ env.OTP_VERSION }}
+      - uses: dtolnay/rust-toolchain@stable
+
+      - run: mix deps.get --only prod
+      - run: mix compile
+      - run: mix release
+
+      # The migration and the two ways of serving are in `rel/overlays/bin/`, so
+      # the archive is the whole of a deploy: untar, run `bin/server`.
+      - name: Archive the release
+        run: |
+          cd _build/prod/rel/ex_monty_cad_server
+          tar czf "$GITHUB_WORKSPACE/ex_monty_cad_server-${{ github.ref_name }}-linux-x86_64.tar.gz" .
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: ex_monty_cad_server-*.tar.gz
+          generate_release_notes: true

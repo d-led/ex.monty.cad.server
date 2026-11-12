@@ -1,9 +1,13 @@
 name: ci
 
-# What a commit has to prove before it is deployed. Four jobs, because they fail
+# What a commit has to prove before it is deployed. Three jobs, because they fail
 # for different reasons and a reader wants to know which: `lint` is the shape of
-# the code, `test` is what it does, `types` is what it claims, and `image` is that
-# the container this repository ships actually builds.
+# the code, `test` is what it does, and `types` is what it claims. The container
+# is not built here: it is offered as a Dockerfile, and an image nobody runs in CI
+# is a claim rather than a check.
+#
+# Documentation is its own workflow (`docs.yml`), because it is published rather
+# than checked: a failing page should not stop a release the code is fit for.
 
 on:
   push:
@@ -46,9 +50,28 @@ jobs:
       - run: mix format --check-formatted
       - run: mix compile --warnings-as-errors
       - run: mix credo --strict
+      # The tool reference is generated from the catalogue: a description changed
+      # in one place and not the other is a page that lies about the server, and
+      # this is where that is noticed.
+      - run: mix ex_monty_cad_server.tools_doc --check
 
   test:
     runs-on: ubuntu-24.04
+    # The catalogue is a Postgres table. CI names the service rather than the
+    # file-backed default, so the suite exercises what a deployment runs.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v7
       - uses: erlef/setup-beam@v1
@@ -93,18 +116,3 @@ jobs:
           key: ${{ runner.os }}-otp${{ env.OTP_VERSION }}-plt-${{ hashFiles('mix.lock') }}
       - run: mix deps.get
       - run: mix dialyzer
-
-  image:
-    # The container is an offer this repository makes, so it is built rather than
-    # assumed. On a pull request it is skipped: the same Dockerfile runs on the
-    # push to main, and a contributor's branch does not need to pay for it.
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: false
-          tags: ex-monty-cad-server:ci

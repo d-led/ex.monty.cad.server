@@ -29,6 +29,8 @@ defmodule ExMontyCadServer.MixProject do
       ],
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
+      docs: docs(),
+      releases: releases(),
       name: "ex_monty_cad_server",
       description:
         "A Model Context Protocol server for CAD: cadmpeg reads the file, " <>
@@ -61,6 +63,58 @@ defmodule ExMontyCadServer.MixProject do
   # Specifies your project dependencies.
   #
   # Type `mix help deps` for examples and options.
+  # What `mix docs` builds, and what a published page is made of. The tool
+  # reference is generated from the catalogue (`mix ex_monty_cad_server.tools_doc`),
+  # so the page a model reads from `tools/list` and the page a person reads here
+  # cannot say different things.
+  defp docs do
+    [
+      main: "readme",
+      source_ref: "main",
+      extras: [
+        "README.md",
+        "docs/tools.md",
+        "docs/architecture.md"
+      ],
+      groups_for_modules: [
+        "The protocol": [ExMontyCadServer.Mcp, ExMontyCadServer.Mcp.Tools],
+        "The tools this server adds": [
+          ExMontyCadServer.Mcp.MemoryTools,
+          ExMontyCadServer.Mcp.ClusterTools
+        ],
+        "The cluster": [ExMontyCadServer.Cluster],
+        "The catalogue": [
+          ExMontyCadServer.Catalogue,
+          ExMontyCadServer.Catalogue.Part,
+          ExMontyCadServer.Catalogue.Library
+        ],
+        "The database": [
+          ExMontyCadServer.Repo,
+          ExMontyCadServer.Database,
+          ExMontyCadServer.Repo.Postgres,
+          ExMontyCadServer.Repo.SQLite
+        ],
+        Transports: [
+          ExMontyCadServer.Mcp.Session,
+          ExMontyCadServerWeb.McpController,
+          Mix.Tasks.ExMontyCadServer.Mcp
+        ]
+      ]
+    ]
+  end
+
+  # One release, and the two scripts it carries (`rel/overlays/bin/`): serve HTTP,
+  # or serve the protocol on stdio. `include_executables_for` is the build's own
+  # platform, because a release is not a portable artifact — the two NIFs in it
+  # are compiled for the machine that built them.
+  defp releases do
+    [
+      ex_monty_cad_server: [
+        include_executables_for: [:unix]
+      ]
+    ]
+  end
+
   defp deps do
     [
       {:phoenix, "~> 1.8.16"},
@@ -78,6 +132,8 @@ defmodule ExMontyCadServer.MixProject do
       {:ecto_sql, "~> 3.13"},
       {:postgrex, ">= 0.0.0"},
       {:ecto_sqlite3, "~> 0.26"},
+      # The reference for people: `mix docs`, and the page CI publishes.
+      {:ex_doc, "~> 0.38", only: :dev, runtime: false},
       # The three engines the tools are made of. `ex_cadmpeg` reads the file,
       # `ex_quiddity` names what is in it and answers the geometry, and
       # `ex_monty_cad` turns a frame into the percept Monty's sensor modules

@@ -67,12 +67,39 @@ defmodule ExMontyCadServer.Mcp do
     _ =
       IO.stream(:stdio, :line)
       |> Enum.reduce(fresh(), fn line, state ->
-        {reply, state} = handle(String.trim_trailing(line), state)
-        if reply, do: IO.puts(reply)
-        state
+        case answer(String.trim_trailing(line), state) do
+          {reply, state} ->
+            if reply, do: IO.puts(reply)
+            state
+        end
       end)
 
     :ok
+  end
+
+  # One message, and the transport survives it whatever it does. A tool that
+  # raises — a database that is not there, a part that went away — is a protocol
+  # error to the client and a line on stderr to whoever is watching, not the end
+  # of the pipe: a client whose server disappears mid-conversation has to guess
+  # which of its own messages was the problem.
+  defp answer(line, state) do
+    handle(line, state)
+  rescue
+    exception ->
+      message = Exception.message(exception)
+      IO.puts(:stderr, Exception.format(:error, exception, __STACKTRACE__))
+      {error_reply(id_of(line), -32_603, message), state}
+  end
+
+  # The id a client expects in the error it gets: read from the message rather
+  # than guessed, because an answer with the wrong id is an answer to nobody.
+  defp id_of(line) do
+    with true <- is_binary(line),
+         {:ok, %{"id" => id}} <- Jason.decode(line) do
+      id
+    else
+      _ -> nil
+    end
   end
 
   @doc """
@@ -155,7 +182,15 @@ defmodule ExMontyCadServer.Mcp do
     if requested in @protocol_versions, do: requested, else: hd(@protocol_versions)
   end
 
-  defp instructions do
+  @doc """
+  What the server says about itself in every `initialize` answer.
+
+  A model that has not read the tool list yet reads this first, so it names the
+  order of the questions rather than the tools one by one. `docs/tools.md` quotes
+  this text rather than paraphrasing it.
+  """
+  @spec instructions() :: String.t()
+  def instructions do
     """
     This server answers questions about a CAD part, and turns one into a graph
     memory that Monty can match against.
@@ -181,7 +216,8 @@ defmodule ExMontyCadServer.Mcp do
 
     A MEMORY: monty_cad_library samples the part's surface, takes that percept at
     every visit, and writes the library a run loads — an object id, a node count,
-    and how many nodes each feature family contributed.
+    and how many nodes each feature family contributed. monty_cad_libraries says
+    what has already been written, so a part is not sampled twice for nothing.
 
     THE GEOMETRY UNDERNEATH: the quiddity tools answer a face, a ray, a frame, a
     mesh and the surface samples directly, for a model that wants the numbers

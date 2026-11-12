@@ -14,6 +14,21 @@ is usable by an assistant over stdio, by a program over HTTP, and by anything th
 can POST JSON — a container, a remote deployment, or a desktop shell carrying the
 same release.
 
+## Documentation
+
+| Where | What |
+| --- | --- |
+| [d-led.github.io/ex.monty.cad.server](https://d-led.github.io/ex.monty.cad.server/) | this server: the architecture, the transports, the catalogue, and the API reference `mix docs` builds |
+| [`docs/tools.md`](docs/tools.md) | the tool reference, generated from the catalogue the server answers `tools/list` with |
+| [hexdocs.pm/ex_cadmpeg](https://hexdocs.pm/ex_cadmpeg) | the file reader: modules, options, the document model |
+| [hexdocs.pm/ex_quiddity](https://hexdocs.pm/ex_quiddity) | the geometry: recognition, frames, rays, surfaces |
+| [hexdocs.pm/ex_monty_cad](https://hexdocs.pm/ex_monty_cad) | the percept and the library a run loads |
+
+The tool reference is not written by hand: `mix ex_monty_cad_server.tools_doc`
+renders it from the same module attributes the server answers with, and CI fails
+when the committed page and the catalogue disagree. A description improved for a
+model is therefore improved for a reader, or it is not improved at all.
+
 ## The tools
 
 From **cadmpeg**:
@@ -43,6 +58,7 @@ From this server, over all three:
 | `monty_cad_on_face` | which feature claims a face — or that it is body, refused or unexplained |
 | `monty_cad_sense` | the node features Monty's sensor module would store if it stood at a point and looked along a direction |
 | `monty_cad_library` | samples the surface, takes that percept at every visit, and writes the gzipped library a run loads |
+| `monty_cad_libraries` | what this server has already learned, newest first: the object, the part, the node count and the file |
 | `cad_plugin_list`, `cad_plugin_describe` | which experiments, learning modules and motor policies a cluster offers |
 
 ## Two transports, one server
@@ -51,10 +67,25 @@ From this server, over all three:
 reply (or `nil` for a notification) and the state after it. Both transports call
 it, so they cannot drift.
 
-**stdio** — a client launches it:
+**stdio** — a client launches it. For a checkout:
 
 ```json
-{"mcpServers": {"cad": {"command": "mix", "args": ["ex_monty_cad_server.mcp"]}}}
+{
+  "mcpServers": {
+    "cad": {
+      "command": "mix",
+      "args": ["ex_monty_cad_server.mcp"],
+      "cwd": "/path/to/ex.monty.cad.server"
+    }
+  }
+}
+```
+
+For a release, point at the binary instead — no Elixir, no `mix`, nothing to
+build on the machine that runs it:
+
+```json
+{"mcpServers": {"cad": {"command": "/opt/ex_monty_cad_server/bin/ex_monty_cad_server", "args": ["mcp"]}}}
 ```
 
 **HTTP** — one message a request:
@@ -62,6 +93,18 @@ it, so they cannot drift.
 ```sh
 curl -s localhost:4000/mcp -H 'content-type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+A client that speaks streamable HTTP names the same endpoint:
+
+```json
+{"mcpServers": {"cad": {"type": "http", "url": "http://localhost:4000/mcp"}}}
+```
+
+MCP Inspector, to try the tools without writing a client:
+
+```sh
+npx @modelcontextprotocol/inspector mix ex_monty_cad_server.mcp
 ```
 
 A request carries one JSON-RPC message; a batch is refused rather than
@@ -117,6 +160,7 @@ protocol, so a model can ask what the cluster has before calling anything.
 
 ```sh
 mix deps.get
+mix ecto.setup                   # the catalogue's tables, in the database below
 mix test
 PORT=4000 mix phx.server          # HTTP on /mcp, a landing page on /
 mix ex_monty_cad_server.mcp       # stdio, for a client that launches it
@@ -126,10 +170,29 @@ It needs the two Rust engines built, which `mix deps.get && mix compile` does.
 `mix ex_monty_cad_server.mcp` refuses to start when one is missing rather than
 failing on the third question.
 
+### The database
+
+Postgres when `DATABASE_URL` names one, SQLite in a file otherwise — so a machine
+with no database server still keeps what it made:
+
+```sh
+DATABASE_URL=ecto://postgres:postgres@localhost/ex_monty_cad_server mix ecto.setup
+PORT=4000 mix phx.server
+```
+
+The migrations are in `priv/repo/migrations`. `SQLITE_PATH` moves the file when
+SQLite is the store. A development database server, if you want one in a
+container:
+
+```sh
+docker run --rm -d --name ex-monty-cad-db -p 5432:5432 \
+  -e POSTGRES_PASSWORD=postgres postgres:17
+```
+
 ### The tests, and the two that need a second node
 
 ```sh
-mix test                                                    # 33 tests
+mix test                                                    # 45 tests
 elixir --name cad@127.0.0.1 -S mix test --only distributed   # the other 2
 ```
 
@@ -140,16 +203,54 @@ distributed VM, and `mix test` does not start one, so they are tagged
 them, and what CI does. No `--cookie` on that line: the peer inherits the default
 one, and a cookie on one side only is a handshake refused.
 
+### As a release
+
+`mix release` builds the whole server — the application, both Rust engines compiled
+for the machine that built it, and the migrations — into one directory that needs
+no Elixir on the machine that runs it:
+
+```sh
+MIX_ENV=prod mix release
+_build/prod/rel/ex_monty_cad_server/bin/server     # migrate, then serve HTTP
+_build/prod/rel/ex_monty_cad_server/bin/mcp        # serve the protocol on stdio
+_build/prod/rel/ex_monty_cad_server/bin/migrate    # just the schema, as a deploy step
+```
+
+`bin/server` migrates before it serves (`MIGRATE_ON_BOOT=false` turns that off and
+makes `bin/migrate` the deploy step). `bin/mcp` migrates too, so a client that
+launches a release on a fresh machine finds a catalogue rather than a missing
+table.
+
+A tag (`v*.*.*`) builds the release on Linux in CI and attaches the archive to a
+GitHub release; the tag, `VERSION` and `mix.exs` have to agree or the job refuses.
+
+Environment, and what each one is for:
+
+| variable | what it does |
+| --- | --- |
+| `DATABASE_URL` | the Postgres to keep the catalogue in; without it, SQLite in `SQLITE_PATH` |
+| `SQLITE_PATH` | where the catalogue file goes (default `<DATA_DIR>/catalogue.db`) |
+| `DATA_DIR` | the directory a container mounts a volume at (default `/app/data`) |
+| `PHX_SERVER` | set by `bin/server`: start the endpoint. `bin/mcp` leaves it unset and serves nothing but the pipe |
+| `SECRET_KEY_BASE` | signs cookies; required only when the endpoint serves |
+| `NODE_NAME` | the node's name, for a deployment that is one node of several — this is what makes plugins cluster-wide |
+| `PORT` | the endpoint's port (default 4000) |
+
 ### In a container
+
+The `Dockerfile` builds the release for the platform it is built on, with the two
+NIFs compiled in. It is offered, not exercised: CI does not build an image, so
+treat the file as a starting point rather than as a tested artifact.
 
 ```sh
 docker build -t ex-monty-cad-server .
 docker run --rm -p 4000:4000 -v "$PWD/parts:/parts" ex-monty-cad-server
 ```
 
-The image runs the release, not `mix`, and carries the two NIFs built for the
-image's platform. Mount the directory that holds the parts: a path in a tool call
-is a path in the container.
+Mount the directory that holds the parts: a path in a tool call is a path in the
+container. `DATABASE_URL` switches it to Postgres, and without one the catalogue
+is a file inside the container — mount a volume at the directory
+`SQLITE_PATH` names, or point it elsewhere than the default.
 
 ## Dependencies, and one that is not on Hex yet
 

@@ -1,0 +1,23 @@
+#!/bin/sh
+#
+# The release as an MCP server on stdio: a client launches this and speaks the
+# protocol on the pipe. Nothing but protocol messages reaches stdout — the
+# release's own boot chatter would be a message the client cannot parse, so the
+# VM's output is kept off the pipe where it can be avoided.
+#
+# `eval` runs the function in a VM that starts the application, and the function
+# does not return until stdin closes, so the pipe stays open for exactly as long
+# as the client holds it.
+set -eu
+
+cd -P -- "$(dirname -- "$0")"
+
+# The catalogue is a table, so the schema comes up before the first call that
+# would read it: a client is told what has been learned, and a file-backed
+# catalogue on a fresh machine has nothing to read yet. Idempotent, and the
+# migration lock means two clients launching at once migrate once.
+if [ "${MIGRATE_ON_BOOT:-true}" != "false" ]; then
+  ./ex_monty_cad_server eval "ExMontyCadServer.Release.migrate"
+fi
+
+exec ./ex_monty_cad_server eval "ExMontyCadServer.Release.mcp"

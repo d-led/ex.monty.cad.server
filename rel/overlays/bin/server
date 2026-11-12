@@ -1,0 +1,19 @@
+#!/bin/sh
+#
+# The release as a web server: what a container, a Machine or a Pod runs.
+# PHX_SERVER is what config/runtime.exs waits for before it starts the endpoint,
+# so the same release also works as a one-off command.
+set -eu
+
+cd -P -- "$(dirname -- "$0")"
+
+# The schema comes up with the release, in its own VM and before anything serves:
+# starting the release is then the whole of a deploy, with no migration step to
+# forget and nothing answering against tables that are not there yet. Ecto takes
+# the migration lock, so several nodes booting at once migrate once. `bin/migrate`
+# is the same call for an operator who wants to migrate without starting a server.
+if [ "${MIGRATE_ON_BOOT:-true}" != "false" ]; then
+  ./ex_monty_cad_server eval "ExMontyCadServer.Release.migrate"
+fi
+
+PHX_SERVER=true exec ./ex_monty_cad_server start

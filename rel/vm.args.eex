@@ -1,0 +1,7 @@
+## Flags given to the VM: https://www.erlang.org/doc/man/erl.html
+## -mode/-name/-sname/-setcookie are configured through environment variables,
+## which rel/env.sh.eex sets; do not set them here.
+
+## More concurrent ports/sockets than the default, because a release may be asked
+## for many parts at once.
++Q 65536
