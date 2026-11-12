@@ -20,9 +20,11 @@ defmodule Mix.Tasks.ExMontyCadServer.Mcp do
 
   use Mix.Task
 
+  alias ExMontyCadServer.Mcp.Serve
+
   @impl true
   def run(_args) do
     Mix.Task.run("app.start")
-    ExMontyCadServer.Mcp.Serve.serve!()
+    Serve.serve!()
   end
 end

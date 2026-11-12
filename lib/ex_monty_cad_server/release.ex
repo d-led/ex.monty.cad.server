@@ -14,6 +14,8 @@ defmodule ExMontyCadServer.Release do
 
   @app :ex_monty_cad_server
 
+  alias ExMontyCadServer.Mcp.Serve
+
   @doc """
   Applies the migrations, in a VM of its own.
 
@@ -43,7 +45,7 @@ defmodule ExMontyCadServer.Release do
   @spec mcp() :: no_return()
   def mcp do
     {:ok, _apps} = Application.ensure_all_started(@app)
-    ExMontyCadServer.Mcp.Serve.serve!()
+    Serve.serve!()
   end
 
   defp repos do

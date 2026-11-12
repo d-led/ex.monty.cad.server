@@ -64,17 +64,16 @@ defmodule ExMontyCadServer.Mcp do
   """
   @spec serve() :: :ok
   def serve do
-    _ =
-      IO.stream(:stdio, :line)
-      |> Enum.reduce(fresh(), fn line, state ->
-        case answer(String.trim_trailing(line), state) do
-          {reply, state} ->
-            if reply, do: IO.puts(reply)
-            state
-        end
-      end)
-
+    _ = IO.stream(:stdio, :line) |> Enum.reduce(fresh(), &answer_line/2)
     :ok
+  end
+
+  # One line in, its reply out, the state carried on: the whole of the transport,
+  # and the one place a failure is turned into a sentence rather than a crash.
+  defp answer_line(line, state) do
+    {reply, state} = answer(String.trim_trailing(line), state)
+    if reply, do: IO.puts(reply)
+    state
   end
 
   # One message, and the transport survives it whatever it does. A tool that

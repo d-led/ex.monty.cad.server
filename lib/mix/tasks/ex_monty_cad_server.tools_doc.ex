@@ -14,13 +14,15 @@ defmodule Mix.Tasks.ExMontyCadServer.ToolsDoc do
 
   use Mix.Task
 
+  alias ExMontyCadServer.Docs.ToolReference
+
   @path "docs/tools.md"
 
   @impl true
   def run(arguments) do
     Mix.Task.run("compile", [])
 
-    rendered = ExMontyCadServer.Docs.ToolReference.render()
+    rendered = ToolReference.render()
     committed = File.read(@path)
 
     if "--check" in arguments do
