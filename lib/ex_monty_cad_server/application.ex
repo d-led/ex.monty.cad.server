@@ -14,9 +14,10 @@ defmodule ExMontyCadServer.Application do
       {Phoenix.PubSub, name: ExMontyCadServer.PubSub},
       # The cluster-wide process groups a plugin is registered in: `:pg` is what
       # knows a name on one node on every other node, and what forgets it when a
-      # node goes down. Written as a child spec of its own because `:pg` has no
-      # `child_spec/1` — it is an OTP module, not an Elixir one.
-      %{id: :pg, start: {:pg, :start_link, [:ex_monty_cad_server]}},
+      # node goes down. The registry is `MontyPlugin.Registry`, shared with every
+      # other node of the estate, and its child is the `:pg` process under the
+      # scope `PLUGIN_SCOPE` names.
+      MontyPlugin.Registry,
       # The catalogue: the parts this server has made a memory of and the
       # memories it wrote. Whichever repo `DATABASE_URL` chose at boot; it starts
       # before anything that would read or write it.

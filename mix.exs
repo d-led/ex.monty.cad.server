@@ -140,6 +140,10 @@ defmodule ExMontyCadServer.MixProject do
       # make and writes the library a run loads.
       {:ex_cadmpeg, "~> 0.1"},
       {:ex_quiddity, "~> 0.1"},
+      # The contract a plugin and a cluster share, and the `:pg` registry that
+      # carries the answer between nodes. Until it is on Hex this is the
+      # repository it will be published from.
+      {:ex_monty_plugin, github: "d-led/ex_monty_plugin"},
       # Until the package is on Hex this is the repository it will be published
       # from; `mix.lock` pins the commit, so a clone builds the same code.
       {:ex_monty_cad, github: "d-led/ex.monty.cad"},

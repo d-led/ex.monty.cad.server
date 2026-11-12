@@ -26,9 +26,14 @@ defmodule ExMontyCadServer.Cluster do
   The three kinds are the three things a run is made of: an experiment, the
   learning modules it steps, and the motor policies that decide where to sense
   next. A provider is registered under one of them, and its answer is held to
-  `MontyCad.Plugin`'s contract: a description is a map, so nothing in the compiler
+  `MontyPlugin`'s contract: a description is a map, so nothing in the compiler
   checks it, and a plugin that names itself unusably is reported with the field
   rather than offered as if it were a choice.
+
+  This module is the server's name for that: the registry itself is
+  `MontyPlugin.Registry`, shared with every other node in the estate, so an
+  experiment offered by a Monty studio node and a policy offered here are the same
+  kind of thing to a caller.
 
   ## Placement is not decoration
 
@@ -42,62 +47,39 @@ defmodule ExMontyCadServer.Cluster do
   caller never has to discover it by crashing.
   """
 
-  @scope :ex_monty_cad_server
-  @kinds [:experiment, :learning_module, :motor_policy]
-  @timeout 5_000
-
   @typedoc "The three things a run is made of."
-  @type kind :: :experiment | :learning_module | :motor_policy
+  @type kind :: MontyPlugin.kind()
 
   @typedoc """
   One provider: where to call it, and what it says it is.
 
-  `describe` is `{:ok, map}` when the plugin answered and `{:error, reason}` when
-  it did not — a provider that has gone quiet is still listed, because a cluster
-  that hides one is a cluster where "nothing there" and "there but silent" look
-  the same.
+  `describe` is `{:ok, map}` when the plugin answered with a description a cluster
+  can use, and `{:error, reason}` when it did not answer or answered unusably.
   """
-  @type provider :: %{
-          kind: kind(),
-          name: String.t(),
-          node: node(),
-          pid: pid(),
-          describe: {:ok, map()} | {:error, String.t()}
-        }
+  @type provider :: MontyPlugin.Registry.provider()
 
   @doc "The kinds a provider can be registered as."
   @spec kinds() :: [kind()]
-  def kinds, do: @kinds
+  def kinds, do: MontyPlugin.kinds()
 
   @doc """
   Offers a process under a name, on this node and therefore on every node.
   """
   @spec register(kind(), String.t(), pid()) :: :ok
-  def register(kind, name, pid) when kind in @kinds and is_binary(name) and is_pid(pid) do
-    :pg.join(@scope, group(kind, name), pid)
-  end
+  def register(kind, name, pid), do: MontyPlugin.Registry.register(kind, name, pid)
 
   @doc "Withdraws an offer."
   @spec unregister(kind(), String.t(), pid()) :: :ok
-  def unregister(kind, name, pid) when kind in @kinds and is_binary(name) and is_pid(pid) do
-    :pg.leave(@scope, group(kind, name), pid)
-  end
+  def unregister(kind, name, pid), do: MontyPlugin.Registry.unregister(kind, name, pid)
 
   @doc """
   Every provider of a kind, across the cluster, in no particular order.
 
-  One plugin registered on two nodes appears twice, which is the truth: the
-  caller picks, and the node it picks is the node the work happens on.
+  One plugin registered on two nodes appears twice, which is the truth: the caller
+  picks, and the node it picks is the node the work happens on.
   """
   @spec providers(kind()) :: [provider()]
-  def providers(kind) when kind in @kinds do
-    @scope
-    |> :pg.which_groups()
-    |> Enum.filter(&match?({^kind, _name}, &1))
-    |> Enum.flat_map(fn {^kind, name} = group ->
-      group |> members() |> Enum.map(&provider(kind, name, &1))
-    end)
-  end
+  def providers(kind), do: MontyPlugin.Registry.providers(kind)
 
   @doc """
   The one provider under a name.
@@ -106,47 +88,5 @@ defmodule ExMontyCadServer.Cluster do
   caller is usually a model that can pick another.
   """
   @spec lookup(kind(), String.t()) :: {:ok, provider()} | {:error, String.t()}
-  def lookup(kind, name) when kind in @kinds do
-    case members(group(kind, name)) do
-      [] ->
-        {:error, "no #{kind} called #{inspect(name)}; the cluster offers: #{offered(kind)}"}
-
-      [pid | _rest] ->
-        {:ok, provider(kind, name, pid)}
-    end
-  end
-
-  defp group(kind, name), do: {kind, name}
-
-  defp members(group), do: :pg.get_members(@scope, group)
-
-  defp provider(kind, name, pid) do
-    %{kind: kind, name: name, node: node(pid), pid: pid, describe: describe(pid)}
-  end
-
-  defp describe(pid) do
-    case GenServer.call(pid, :describe, @timeout) do
-      %{} = describe -> conform(describe)
-      other -> {:error, ":describe answered #{inspect(other)} rather than a map"}
-    end
-  catch
-    :exit, reason -> {:error, "the plugin did not answer: #{inspect(reason)}"}
-  end
-
-  # The plugin wrote a map, and a map is checked here rather than at the call that
-  # trusted it: a description missing a name or a placement is a plugin nobody can
-  # offer, and the sentence says which field.
-  defp conform(describe) do
-    case MontyCad.Plugin.conforms?(describe) do
-      :ok -> {:ok, describe}
-      {:error, reason} -> {:error, "the plugin describes itself wrongly: #{reason}"}
-    end
-  end
-
-  defp offered(kind) do
-    case providers(kind) |> Enum.map(& &1.name) |> Enum.uniq() |> Enum.sort() do
-      [] -> "nothing of that kind"
-      names -> Enum.join(names, ", ")
-    end
-  end
+  def lookup(kind, name), do: MontyPlugin.Registry.lookup(kind, name)
 end
