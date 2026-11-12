@@ -21,6 +21,19 @@ defmodule ExMontyCadServer.TestPlugin do
     GenServer.start_link(__MODULE__, describe, Keyword.put_new(opts, :name, __MODULE__))
   end
 
+  @doc """
+  Starts one, unlinked and unnamed.
+
+  A process a test starts on another node has to outlive the call that started
+  it, so it cannot be linked to that call's process; and the cluster name is the
+  registration, so the process itself needs none.
+  """
+  @spec start_unlinked(keyword()) :: {:ok, pid()}
+  def start_unlinked(opts \\ []) do
+    {describe, _opts} = Keyword.pop(opts, :describe, @describe)
+    GenServer.start(__MODULE__, describe)
+  end
+
   @impl true
   def init(describe), do: {:ok, describe}
 
