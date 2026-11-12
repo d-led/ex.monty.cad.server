@@ -176,6 +176,37 @@ defmodule ExMontyCadServer.McpTest do
     end
   end
 
+  describe "the features near a point" do
+    test "are named, nearest first, with how far each one is" do
+      {reply, _state} = features_near(30.0)
+
+      result = reply["result"]
+      assert result["isError"] == false
+      assert [first | _rest] = result["structuredContent"]["features"]
+      assert first["id"] == "bosses/0"
+      assert first["family"] == "bosses"
+      # The boss's axis point is ten millimetres below the top the sensor is on.
+      assert_in_delta first["distance"], 10.0, 0.01
+      assert text_of(result) =~ "bosses/0 (bosses)"
+    end
+
+    test "a radius that reaches nothing says so instead of answering with something" do
+      {reply, _state} = features_near(0.001)
+
+      result = reply["result"]
+      assert result["isError"] == false
+      assert result["structuredContent"]["features"] == []
+      assert text_of(result) =~ "none of them"
+    end
+  end
+
+  defp features_near(radius) do
+    request("tools/call", %{
+      "name" => "monty_cad_features_near",
+      "arguments" => %{"path" => @fixture, "point" => @boss_top, "radius" => radius}
+    })
+  end
+
   defp sense do
     request("tools/call", %{
       "name" => "monty_cad_sense",

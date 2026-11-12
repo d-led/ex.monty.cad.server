@@ -10,6 +10,12 @@ defmodule ExMontyCadServer.Mcp.MemoryTools do
 
   alias MontyCad.{Percept, Training}
 
+  # How far a proximity query looks when it is not told, and how many features it
+  # answers with: enough to reach the neighbouring features of an ordinary part,
+  # and few enough to read.
+  @near_radius 25.0
+  @near_limit 10
+
   @catalogue [
     %{
       "name" => "monty_cad_brief",
@@ -25,6 +31,37 @@ defmodule ExMontyCadServer.Mcp.MemoryTools do
           "path" => %{"type" => "string", "description" => "the part to open"}
         },
         "required" => ["path"]
+      },
+      "annotations" => %{"readOnlyHint" => true}
+    },
+    %{
+      "name" => "monty_cad_features_near",
+      "title" => "Which features are near this point?",
+      "description" =>
+        "Opens a STEP part, recognises its features, and answers which of them " <>
+          "sit within a radius of a point, nearest first — a hole, a boss, a " <>
+          "chamfer by name and by distance. The distance is to the anchor the " <>
+          "recognition gives a feature (a boss's axis point, for instance), not " <>
+          "to its surface, so it orders features rather than measuring gaps.",
+      "inputSchema" => %{
+        "type" => "object",
+        "properties" => %{
+          "path" => %{"type" => "string", "description" => "the part to open"},
+          "point" => %{
+            "type" => "array",
+            "items" => %{"type" => "number"},
+            "description" => "the point to measure from, in the part's millimetres"
+          },
+          "radius" => %{
+            "type" => "number",
+            "description" => "how far to look, in millimetres (default 25)"
+          },
+          "limit" => %{
+            "type" => "integer",
+            "description" => "the most features to answer with (default 10)"
+          }
+        },
+        "required" => ["path", "point"]
       },
       "annotations" => %{"readOnlyHint" => true}
     },
@@ -105,6 +142,8 @@ defmodule ExMontyCadServer.Mcp.MemoryTools do
   def call("monty_cad_brief", arguments, state), do: brief(arguments, state)
 
   def call("monty_cad_sense", arguments, state), do: sense(arguments, state)
+
+  def call("monty_cad_features_near", arguments, state), do: features_near(arguments, state)
 
   def call("monty_cad_library", arguments, state), do: library(arguments, state)
 
@@ -192,6 +231,77 @@ defmodule ExMontyCadServer.Mcp.MemoryTools do
       {:error, error} -> {:error, Quiddity.Mcp.describe_error(error)}
     end
   end
+
+  # The features near a point, nearest first. A feature is placed by the anchor
+  # the recognition gives it, so this orders features — which is what a policy
+  # choosing where to sense next needs — rather than measuring the gap to a
+  # surface, which would need the geometry rather than the record.
+  defp features_near(arguments, state) do
+    with {:ok, path} <- required(arguments, "path"),
+         {:ok, point} <- point(arguments, "point"),
+         {:ok, part} <- open(path),
+         {:ok, recognition} <- features(part) do
+      radius = Map.get(arguments, "radius") || @near_radius
+      limit = Map.get(arguments, "limit") || @near_limit
+
+      {placed, unplaced} =
+        Enum.split_with(recognition.records, fn record -> not is_nil(anchor(record)) end)
+
+      near =
+        placed
+        |> Enum.map(fn record -> {distance(point, anchor(record)), record} end)
+        |> Enum.filter(fn {how_far, _record} -> how_far <= radius end)
+        |> Enum.sort_by(fn {how_far, _record} -> how_far end)
+        |> Enum.take(limit)
+        |> Enum.map(fn {how_far, record} ->
+          %{
+            "id" => record["id"],
+            "family" => record["family"],
+            "distance" => Float.round(how_far, 3),
+            "anchor" => anchor(record),
+            "parameters" => record["parameters"]
+          }
+        end)
+
+      {:ok,
+       %{
+         text: """
+         #{length(near)} feature(s) within #{radius} mm of #{inspect(point)}: \
+         #{near_sentence(near)}#{unplaced_sentence(length(unplaced))}
+         """,
+         structured: %{
+           "path" => path,
+           "point" => point,
+           "radius" => radius,
+           "features" => near
+         }
+       }, state}
+    else
+      {:error, message} -> {:error, message, state}
+    end
+  end
+
+  # A feature's own anchor: the point its record already carries in its
+  # parameters — a boss's axis point, a hole's mouth.
+  defp anchor(%{"parameters" => %{"location" => [x, y, z]}})
+       when is_number(x) and is_number(y) and is_number(z),
+       do: [x, y, z]
+
+  defp anchor(_record), do: nil
+
+  defp distance([ax, ay, az], [bx, by, bz]),
+    do: :math.sqrt((ax - bx) ** 2 + (ay - by) ** 2 + (az - bz) ** 2)
+
+  defp near_sentence([]), do: "none of them"
+
+  defp near_sentence(features) do
+    Enum.map_join(features, "; ", fn feature ->
+      "#{feature["id"]} (#{feature["family"]}) at #{feature["distance"]} mm"
+    end)
+  end
+
+  defp unplaced_sentence(0), do: ""
+  defp unplaced_sentence(count), do: ". #{count} feature(s) give no anchor to measure from"
 
   defp frame(part, point, normal) do
     with {:ok, camera} <- Quiddity.Camera.patch(point, normal),
