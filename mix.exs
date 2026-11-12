@@ -10,6 +10,14 @@ defmodule ExMontyCadServer.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
+      # The Mix task calls `Mix.Task` and `Mix.raise`, and the test support calls
+      # `ExUnit`'s macros; neither application is in a default PLT, and without
+      # them every one of those calls is reported as an unknown function.
+      dialyzer: [
+        plt_add_apps: [:mix, :ex_unit],
+        plt_local_path: "priv/plts",
+        plt_core_path: "priv/plts"
+      ],
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
       name: "ex_monty_cad_server",

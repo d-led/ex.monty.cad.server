@@ -35,8 +35,10 @@ RUN mix deps.get --only prod && mix deps.compile
 
 COPY config config
 COPY lib lib
-COPY priv priv
 
+# No `priv`: this application ships no static files and no data of its own. The
+# engines' own `priv` trees belong to the dependencies, which the build stage
+# compiled into their applications.
 RUN mix compile && mix release
 
 FROM debian:${DEBIAN_VERSION} AS app

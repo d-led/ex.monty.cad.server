@@ -92,3 +92,6 @@ Temporary Items
 # What this repository adds: where a caller's parts and the libraries written
 # from them land when a test or a run needs somewhere to put them.
 /tmp
+
+# Dialyzer's PLTs, kept where CI caches them
+/priv/plts
