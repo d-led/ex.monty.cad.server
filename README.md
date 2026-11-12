@@ -123,6 +123,20 @@ It needs the two Rust engines built, which `mix deps.get && mix compile` does.
 `mix ex_monty_cad_server.mcp` refuses to start when one is missing rather than
 failing on the third question.
 
+### The tests, and the two that need a second node
+
+```sh
+mix test                                                    # 31 tests
+elixir --name cad@127.0.0.1 -S mix test --only distributed   # the other 2
+```
+
+The cluster tests start a second node with `:peer` and offer a plugin on it,
+because "visible on every node" is a claim worth failing on. A peer needs a
+distributed VM, and `mix test` does not start one, so they are tagged
+`:distributed` and a plain run excludes them — the second command is how to run
+them, and what CI does. No `--cookie` on that line: the peer inherits the default
+one, and a cookie on one side only is a handshake refused.
+
 ### In a container
 
 ```sh
