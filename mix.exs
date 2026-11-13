@@ -130,7 +130,10 @@ defmodule ExMontyCadServer.MixProject do
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:jason, "~> 1.2"},
-      {:dns_cluster, "~> 0.2.0"},
+      # 0.3 answers SRV queries as well as address lists, which is what a cluster
+      # inside a Kubernetes service needs; the child spec this application starts
+      # (`{DNSCluster, query: …}`) is unchanged.
+      {:dns_cluster, "~> 0.3"},
       {:bandit, "~> 1.5"},
       # The database: the same Postgres and Ecto the studio app keeps its runs in,
       # and the same SQLite fallback so a release still works without a server.
@@ -146,11 +149,14 @@ defmodule ExMontyCadServer.MixProject do
       {:ex_cadmpeg, "~> 0.1"},
       {:ex_quiddity, "~> 0.1"},
       # The contract a plugin and a cluster share, and the `:pg` registry that
-      # carries the answer between nodes. Until it is on Hex this is the
-      # repository it will be published from.
-      {:ex_monty_plugin, github: "d-led/ex.monty.plugin"},
-      # Until the package is on Hex this is the repository it will be published
-      # from; `mix.lock` pins the commit, so a clone builds the same code.
+      # carries the answer between nodes. From Hex: it is published, and the
+      # contract is the one thing two packages have to agree about, so agreement
+      # is a version.
+      {:ex_monty_plugin, "~> 0.1.1"},
+      # Still a checkout: `0.3.0` — the version that takes the contract from the
+      # package instead of carrying its own copy — is on its way through the
+      # release pipeline, and the requirement becomes `~> 0.3` when it is
+      # approved. `mix.lock` pins the commit, so a clone builds the same code.
       {:ex_monty_cad, github: "d-led/ex.monty.cad"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
