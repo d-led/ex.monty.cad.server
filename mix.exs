@@ -160,15 +160,10 @@ defmodule ExMontyCadServer.MixProject do
       {:ex_monty_plugin, "~> 0.1.2"},
       # `0.5` is the version with the feature walk (`MontyCad.Policy.FeatureWalk`)
       # and with `MontyCad.Inputs`, which is where a part is a name in
-      # `$MONTY_DATA/parts`. `0.6.0` is the one whose walk is plain data — a list
-      # of visited feature ids rather than a `MapSet` — which is what lets this
-      # node pass a walk to the package's own `state_dict/1` (`mix dialyzer`
-      # refuses the empty set). Committed, not yet released: pinned to the
-      # commit; on release this becomes `{:ex_monty_cad, "~> 0.6"}`.
-      {:ex_monty_cad,
-       github: "d-led/ex.monty.cad",
-       rev: "30b5c6f74d8982db5fc32677569c7618537873dc",
-       override: true},
+      # `$MONTY_DATA/parts`. `0.6` is the one whose walk is plain data — a list of
+      # visited feature ids rather than a `MapSet` — which is what lets this node
+      # hand a walk to the package's own `state_dict/1`.
+      {:ex_monty_cad, "~> 0.6"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
