@@ -21,8 +21,11 @@ same release.
 | [d-led.github.io/ex.monty.cad.server](https://d-led.github.io/ex.monty.cad.server/) | this server: the architecture, the transports, the catalogue, and the API reference `mix docs` builds |
 | [`docs/tools.md`](docs/tools.md) | the tool reference, generated from the catalogue the server answers `tools/list` with |
 | [hexdocs.pm/ex_cadmpeg](https://hexdocs.pm/ex_cadmpeg) | the file reader: modules, options, the document model |
+| [d-led.github.io/ex.quiddity](https://d-led.github.io/ex.quiddity/) | the same reference for `main`, before a release — and its `llms.txt` |
 | [hexdocs.pm/ex_quiddity](https://hexdocs.pm/ex_quiddity) | the geometry: recognition, frames, rays, surfaces |
+| [d-led.github.io/ex.monty.cad](https://d-led.github.io/ex.monty.cad/) | the percept and the library, as `main` has them |
 | [hexdocs.pm/ex_monty_cad](https://hexdocs.pm/ex_monty_cad) | the percept and the library a run loads |
+| [hexdocs.pm/ex_monty_plugin](https://hexdocs.pm/ex_monty_plugin) | the plugin contract and the registry this server's cluster is |
 
 The tool reference is not written by hand: `mix ex_monty_cad_server.tools_doc`
 renders it from the same module attributes the server answers with, and CI fails
