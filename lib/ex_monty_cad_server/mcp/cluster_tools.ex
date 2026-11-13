@@ -111,10 +111,11 @@ defmodule ExMontyCadServer.Mcp.ClusterTools do
   end
 
   def summary(providers, %{clustered: false}) do
-    "#{length(providers)} plugin(s) on this node (named #{Node.self()}), which is not " <>
-      "part of a cluster: a node without a name reaches no other node, so a plugin " <>
-      "elsewhere cannot be seen from here. `NODE_NAME` and `NODE_COOKIE` are what join " <>
-      "one — `elixir --sname cad -S mix` is the same in development."
+    "#{length(providers)} plugin(s) on this node: #{listing(providers)}. It is named " <>
+      "#{Node.self()}, which is not part of a cluster — a node without a name reaches " <>
+      "no other node, so a plugin elsewhere cannot be seen from here. `NODE_NAME` and " <>
+      "`NODE_COOKIE` are what join one; `elixir --sname cad -S mix` does the same in " <>
+      "development."
   end
 
   def summary(providers, _facts) do

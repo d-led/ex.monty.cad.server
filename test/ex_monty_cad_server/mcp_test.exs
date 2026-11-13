@@ -185,18 +185,25 @@ defmodule ExMontyCadServer.McpTest do
       assert reply["result"]["structuredContent"]["providers"] == []
     end
 
-    # This VM is distributed (the test helper starts it that way), so the sentence
-    # for a node outside a cluster is asked for rather than provoked: "0 plugins"
-    # read as "nothing is offered anywhere" until a release over stdio said it on a
-    # node that had never been in a cluster at all.
-    test "a node that was never in a cluster says that, not that the cluster is empty" do
+    # This VM may or may not be distributed — the test helper asks for it, and CI
+    # says no — so the sentence for a node outside a cluster is asked for, facts and
+    # all: "0 plugins" read as "nothing is offered anywhere" until a release over
+    # stdio said it on a node that had never been in a cluster at all.
+    test "a node outside a cluster still names what it has, and says it has no cluster" do
       facts = %{discovery: true, discovery_var: nil, clustered: false}
 
-      text = ClusterTools.summary([], facts)
+      provider = %{
+        name: "follow_chamfers",
+        kind: :motor_policy,
+        node: :nonode@nohost,
+        describe: {:ok, %{"name" => "follow_chamfers"}}
+      }
 
+      text = ClusterTools.summary([provider], facts)
+
+      assert text =~ "motor_policy: follow_chamfers"
       assert text =~ "not part of a cluster"
       assert text =~ "NODE_NAME"
-      refute text =~ "nothing is registered"
     end
 
     test "a node in a cluster counts what it offers" do
