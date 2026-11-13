@@ -149,14 +149,28 @@ defmodule ExMontyCadServer.MixProject do
       {:ex_cadmpeg, "~> 0.1"},
       {:ex_quiddity, "~> 0.1"},
       # The contract a plugin and a cluster share, and the `:pg` registry that
-      # carries the answer between nodes. From Hex: it is published, and the
-      # contract is the one thing two packages have to agree about, so agreement
-      # is a version.
-      {:ex_monty_plugin, "~> 0.1.1"},
-      # From Hex too: `0.3.0` is the version that takes the contract from the
-      # package instead of carrying its own copy, so the two packages agree about
-      # a plugin's description by agreeing about a version.
-      {:ex_monty_cad, "~> 0.3"},
+      # carries the answer between nodes. The contract is the one thing two
+      # packages have to agree about, so agreement is a version.
+      #
+      # `0.1.2` is the version that publishes what a host *carries*
+      # (`MontyPlugin.Capabilities`), which is the half a plugin's `needs` is
+      # checked against — and the walk this node offers needs `quiddity` and
+      # `monty`, so a host that could not say it carries them would have its own
+      # policy refused as unservable. It is committed and not yet released, so it
+      # is pinned to the commit; on release this line becomes
+      # `{:ex_monty_plugin, "~> 0.1.2"}`.
+      {:ex_monty_plugin,
+       github: "d-led/ex.monty.plugin",
+       rev: "7e0de811f273ac9c851ff6803fe9e169e017b0e2",
+       override: true},
+      # `0.5.0` is the version with the feature walk (`MontyCad.Policy.FeatureWalk`)
+      # and with `MontyCad.Inputs`, which is where a part is a name in
+      # `$MONTY_DATA/parts`. Committed and not yet released, so pinned to the
+      # commit; on release this becomes `{:ex_monty_cad, "~> 0.5"}`.
+      {:ex_monty_cad,
+       github: "d-led/ex.monty.cad",
+       rev: "36d497f6cfe7ec48ae1f8f244f5762e008793784",
+       override: true},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ]

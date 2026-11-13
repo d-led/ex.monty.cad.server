@@ -24,6 +24,11 @@ defmodule ExMontyCadServer.Application do
       # has opened and the parts quiddity has read. A transport that is a pipe
       # keeps its own state in its own loop; a request cannot.
       ExMontyCadServer.Mcp.Session,
+      # The motor policy this node offers the cluster. It opens the part named by
+      # `MONTY_CAD_PART` when an episode starts rather than at boot, so a node
+      # with no part named still offers the policy and refuses the episode with
+      # the sentence that names the variable.
+      ExMontyCadServer.Policy.FeatureWalk,
       # Start to serve requests, typically the last entry
       ExMontyCadServerWeb.Endpoint
     ]

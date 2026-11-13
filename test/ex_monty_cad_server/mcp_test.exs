@@ -197,7 +197,8 @@ defmodule ExMontyCadServer.McpTest do
       {reply, _state} = call_tool("cad_plugin_list", %{}, on_a_node(clustered: false))
 
       text = text_of(reply["result"])
-      assert text =~ "motor_policy: follow_chamfers"
+      assert text =~ "motor_policy:"
+      assert text =~ "follow_chamfers"
       assert text =~ "not part of a cluster"
       assert text =~ "NODE_NAME"
     end
@@ -275,7 +276,8 @@ defmodule ExMontyCadServer.McpTest do
 
       result = reply["result"]
       assert result["isError"] == false
-      assert text_of(result) =~ "motor_policy: follow_chamfers"
+      assert text_of(result) =~ "motor_policy:"
+      assert text_of(result) =~ "follow_chamfers"
     end
 
     test "describes one plugin, including where it may run" do
