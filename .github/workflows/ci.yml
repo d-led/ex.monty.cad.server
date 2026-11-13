@@ -114,9 +114,11 @@ jobs:
             _build
             priv/native
           key: ${{ runner.os }}-otp${{ env.OTP_VERSION }}-${{ hashFiles('mix.lock') }}
+      # The PLTs live under `_build`, not `priv`: `priv/plts` named them where a
+      # release copies files from, and a tagged archive then carried them.
       - uses: actions/cache@v4
         with:
-          path: priv/plts
+          path: _build/plts
           key: ${{ runner.os }}-otp${{ env.OTP_VERSION }}-plt-${{ hashFiles('mix.lock') }}
       - run: mix deps.get
       - run: mix dialyzer

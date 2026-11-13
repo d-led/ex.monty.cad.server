@@ -22,10 +22,15 @@ defmodule ExMontyCadServer.MixProject do
       # The Mix task calls `Mix.Task` and `Mix.raise`, and the test support calls
       # `ExUnit`'s macros; neither application is in a default PLT, and without
       # them every one of those calls is reported as an unknown function.
+      #
+      # The PLTs live under `_build`, because `priv/` travels: `mix release` copies
+      # an application's whole `priv` into the archive, and a run of `mix release`
+      # on a machine that had also run dialyzer once put nine megabytes of PLT in
+      # the tarball a deployment downloads.
       dialyzer: [
         plt_add_apps: [:mix, :ex_unit],
-        plt_local_path: "priv/plts",
-        plt_core_path: "priv/plts"
+        plt_local_path: "_build/plts",
+        plt_core_path: "_build/plts"
       ],
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
       listeners: [Phoenix.CodeReloader],
