@@ -3,7 +3,7 @@ defmodule ExMontyCadServer.MixProject do
 
   # The same number `VERSION` carries: the release workflow compares the two, and
   # a tag that disagrees with either is refused rather than published.
-  @version "0.1.0"
+  @version "0.2.0"
 
   def project do
     [

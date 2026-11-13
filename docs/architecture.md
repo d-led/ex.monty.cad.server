@@ -92,6 +92,26 @@ operations per step: it is advertised and compiled where it will run, never call
 across the network. Experiments and motor policies are called once per step, so a
 remote call is free.
 
+### What this node offers
+
+`ExMontyCadServer.Policy.FeatureWalk` is a provider of its own: the node offers
+`monty_cad.feature_walk`, the walk from feature to feature over a part's surface
+(`MontyCad.Policy.FeatureWalk` in `ex_monty_cad`). It answers the four messages a
+remote caller sends — `{:new, []}`, `{:call, policy, …}`, `{:reset, policy}`,
+`{:state_dict, policy}` — which is `Monty.Studio.RemotePolicy`'s whole agreement
+with a host.
+
+The part cannot cross, so what crosses is the walk's **progress**: the feature it
+chose, the ones it has been to, how many steps it took. The part is opened here on
+the first episode and kept, which is the `:owner_only` placement that section
+above is about, made concrete.
+
+The part is named by `MONTY_CAD_PART`: a part's file name in `$MONTY_DATA/parts`
+(`MontyCad.Inputs`, the same convention the studio resolves), or the path of a file
+that exists. A node with no part named still starts and offers the policy — the
+first episode is refused with the sentence that names the variable, which is the
+same answer `cad_plugin_describe` gives a caller who asks first.
+
 ## The catalogue
 
 `monty_cad_library` writes two things: the library file a run loads, and a row
@@ -115,8 +135,11 @@ graph TD
   S --> PG[":pg"]
   S --> R[Repo: Postgres or SQLite]
   S --> SS[Mcp.Session]
+  S --> PW[Policy.FeatureWalk]
   S --> E[Endpoint]
 ```
 
 The repo starts before the session, and the session before the endpoint: nothing
-that answers a request may outlive the store it reads.
+that answers a request may outlive the store it reads. The policy registers itself
+from its `init/1`, so a node that restarts re-offers it, and one that stops takes
+its name out of the cluster with it.

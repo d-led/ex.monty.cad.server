@@ -229,7 +229,11 @@ defmodule ExMontyCadServer.Mcp do
     WHAT A RUN IS MADE OF: cad_plugin_list says which experiments, learning
     modules and motor policies the cluster offers, and cad_plugin_describe asks
     one of them about itself — including whether it can be called from another
-    node, which a policy that reads a part cannot.
+    node, which a policy that reads a part cannot. This node offers one of its
+    own: monty_cad.feature_walk, a motor policy that walks a part's surface from
+    feature to feature, and it is `:owner_only` because the walk reads the part
+    here. It steps the part MONTY_CAD_PART names, and while no part is named it is
+    offered and refuses the first episode with the sentence that names it.
 
     Paths are the interface. A native format that keeps parts of itself in files
     beside it is read against its own directory, which is why a file is named
