@@ -158,14 +158,10 @@ defmodule ExMontyCadServer.MixProject do
       # `monty`, so a host that could not say it carries them would have its own
       # policy refused as unservable.
       {:ex_monty_plugin, "~> 0.1.2"},
-      # `0.5.0` is the version with the feature walk (`MontyCad.Policy.FeatureWalk`)
+      # `0.5` is the version with the feature walk (`MontyCad.Policy.FeatureWalk`)
       # and with `MontyCad.Inputs`, which is where a part is a name in
-      # `$MONTY_DATA/parts`. Committed and not yet released, so pinned to the
-      # commit; on release this becomes `{:ex_monty_cad, "~> 0.5"}`.
-      {:ex_monty_cad,
-       github: "d-led/ex.monty.cad",
-       rev: "36d497f6cfe7ec48ae1f8f244f5762e008793784",
-       override: true},
+      # `$MONTY_DATA/parts`.
+      {:ex_monty_cad, "~> 0.5"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
