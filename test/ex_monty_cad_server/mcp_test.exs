@@ -172,6 +172,18 @@ defmodule ExMontyCadServer.McpTest do
   end
 
   describe "the cluster" do
+    test "a node that takes no part in one says so rather than looking empty" do
+      System.put_env("PLUGIN_DISCOVERY", "none")
+      on_exit(fn -> System.delete_env("PLUGIN_DISCOVERY") end)
+
+      {reply, _state} = call_tool("cad_plugin_list", %{})
+
+      text = text_of(reply["result"])
+      assert text =~ "plugin discovery is off on this node"
+      assert text =~ "PLUGIN_DISCOVERY"
+      assert reply["result"]["structuredContent"]["providers"] == []
+    end
+
     test "names a plugin whose answer cannot be used as such" do
       description = %{"name" => "nameless", "kind" => :motor_policy, "placement" => :owner_only}
 

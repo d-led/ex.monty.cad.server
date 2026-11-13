@@ -72,19 +72,27 @@ defmodule ExMontyCadServer.Mcp.ClusterTools do
 
   defp list(arguments, state) do
     case kinds(arguments) do
-      {:ok, kinds} ->
-        providers = Enum.flat_map(kinds, &Cluster.providers/1)
+      {:ok, kinds} -> listed(Enum.flat_map(kinds, &Cluster.providers/1), state)
+      {:error, message} -> {:error, message, state}
+    end
+  end
 
-        {:ok,
-         %{
-           text: """
-           #{length(providers)} plugin(s) on this cluster: #{listing(providers)}
-           """,
-           structured: %{"providers" => Enum.map(providers, &encode/1)}
-         }, state}
+  defp listed(providers, state) do
+    {:ok,
+     %{text: summary(providers), structured: %{"providers" => Enum.map(providers, &encode/1)}},
+     state}
+  end
 
-      {:error, message} ->
-        {:error, message, state}
+  # A node that takes no part in a cluster has no plugins for a reason that is
+  # worth saying: "0 plugins" reads as "nothing is offered anywhere", and the fix
+  # is a variable rather than a colleague.
+  defp summary(providers) do
+    if MontyPlugin.Registry.enabled?() do
+      "#{length(providers)} plugin(s) on this cluster: #{listing(providers)}"
+    else
+      "plugin discovery is off on this node " <>
+        "(PLUGIN_DISCOVERY=#{inspect(System.get_env("PLUGIN_DISCOVERY"))}), so it " <>
+        "joined no cluster and offers nothing. `PLUGIN_DISCOVERY=pg` is how it takes part."
     end
   end
 
