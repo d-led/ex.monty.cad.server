@@ -3,10 +3,10 @@
 A Model Context Protocol server for CAD, over three engines that answer different
 questions about the same part:
 
-| Engine                                                           | The question it answers                                                                         |
-| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| [cadmpeg](https://github.com/cadmpeg/cadmpeg)                    | What is in this file, and how faithfully was it read?                                           |
-| [quiddity](https://github.com/pzfreo/quiddity)                   | What are the features, and what does the geometry look like where a sensor would stand?         |
+| Engine | The question it answers |
+| --- | --- |
+| [cadmpeg](https://github.com/cadmpeg/cadmpeg) | What is in this file, and how faithfully was it read? |
+| [quiddity](https://github.com/pzfreo/quiddity) | What are the features, and what does the geometry look like where a sensor would stand? |
 | Monty, via [ex_monty_cad](https://github.com/d-led/ex.monty.cad) | What would Monty's own observation processor perceive there, and what library would a run load? |
 
 The protocol is the interface. A tool call is the unit of work, so the same server
@@ -16,16 +16,16 @@ same release.
 
 ## Documentation
 
-| Where                                                                               | What                                                                                                  |
-| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Where | What |
+| --- | --- |
 | [d-led.github.io/ex.monty.cad.server](https://d-led.github.io/ex.monty.cad.server/) | this server: the architecture, the transports, the catalogue, and the API reference `mix docs` builds |
-| [`docs/tools.md`](docs/tools.md)                                                    | the tool reference, generated from the catalogue the server answers `tools/list` with                 |
-| [hexdocs.pm/ex_cadmpeg](https://hexdocs.pm/ex_cadmpeg)                              | the file reader: modules, options, the document model                                                 |
-| [d-led.github.io/ex.quiddity](https://d-led.github.io/ex.quiddity/)                 | the same reference for `main`, before a release — and its `llms.txt`                                  |
-| [hexdocs.pm/ex_quiddity](https://hexdocs.pm/ex_quiddity)                            | the geometry: recognition, frames, rays, surfaces                                                     |
-| [d-led.github.io/ex.monty.cad](https://d-led.github.io/ex.monty.cad/)               | the percept and the library, as `main` has them                                                       |
-| [hexdocs.pm/ex_monty_cad](https://hexdocs.pm/ex_monty_cad)                          | the percept and the library a run loads                                                               |
-| [hexdocs.pm/ex_monty_plugin](https://hexdocs.pm/ex_monty_plugin)                    | the plugin contract and the registry this server's cluster is                                         |
+| [`docs/tools.md`](docs/tools.md) | the tool reference, generated from the catalogue the server answers `tools/list` with |
+| [hexdocs.pm/ex_cadmpeg](https://hexdocs.pm/ex_cadmpeg) | the file reader: modules, options, the document model |
+| [d-led.github.io/ex.quiddity](https://d-led.github.io/ex.quiddity/) | the same reference for `main`, before a release — and its `llms.txt` |
+| [hexdocs.pm/ex_quiddity](https://hexdocs.pm/ex_quiddity) | the geometry: recognition, frames, rays, surfaces |
+| [d-led.github.io/ex.monty.cad](https://d-led.github.io/ex.monty.cad/) | the percept and the library, as `main` has them |
+| [hexdocs.pm/ex_monty_cad](https://hexdocs.pm/ex_monty_cad) | the percept and the library a run loads |
+| [hexdocs.pm/ex_monty_plugin](https://hexdocs.pm/ex_monty_plugin) | the plugin contract and the registry this server's cluster is |
 
 The tool reference is not written by hand: `mix ex_monty_cad_server.tools_doc`
 renders it from the same module attributes the server answers with, and CI fails
@@ -36,33 +36,33 @@ model is therefore improved for a reader, or it is not improved at all.
 
 From **cadmpeg**:
 
-| Tool              | Answer                                                                                                  |
-| ----------------- | ------------------------------------------------------------------------------------------------------- |
+| Tool | Answer |
+| --- | --- |
 | `cadmpeg_formats` | which formats this build reads and writes — compiled-in features, so it is a fact rather than a promise |
-| `cadmpeg_inspect` | the decode report: what was transferred, and every loss with its reason                                 |
-| `cadmpeg_convert` | the same document written as `step` or as cadmpeg's own JSON, with the export report                    |
+| `cadmpeg_inspect` | the decode report: what was transferred, and every loss with its reason |
+| `cadmpeg_convert` | the same document written as `step` or as cadmpeg's own JSON, with the export report |
 
 From **quiddity**:
 
-| Tool                                                                  | Answer                                                  |
-| --------------------------------------------------------------------- | ------------------------------------------------------- |
-| `quiddity_part`                                                       | what the part is: faces, recognized features, the frame |
-| `quiddity_features`, `quiddity_face`, `quiddity_correspond`           | the recognition, one face, and two revisions compared   |
-| `quiddity_probe`, `quiddity_sense`, `quiddity_frame`, `quiddity_mesh` | a ray, a sensor at a point, the camera frame, the mesh  |
-| `quiddity_export_mjcf`                                                | a MuJoCo scene in metres                                |
+| Tool | Answer |
+| --- | --- |
+| `quiddity_part` | what the part is: faces, recognized features, the frame |
+| `quiddity_features`, `quiddity_face`, `quiddity_correspond` | the recognition, one face, and two revisions compared |
+| `quiddity_probe`, `quiddity_sense`, `quiddity_frame`, `quiddity_mesh` | a ray, a sensor at a point, the camera frame, the mesh |
+| `quiddity_export_mjcf` | a MuJoCo scene in metres |
 
 From this server, over all three:
 
-| Tool                                     | Answer                                                                                                               |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `monty_cad_brief`                        | what quiddity recognised: the feature families and how many of each, and the faces no feature claims                 |
-| `monty_cad_features_near`                | which features sit within a radius of a point, nearest first — the query a policy choosing where to sense next needs |
-| `monty_cad_next_feature`                 | which features lie ahead along a direction, within a cone, with the distance and the angle off it                    |
-| `monty_cad_on_face`                      | which feature claims a face — or that it is body, refused or unexplained                                             |
-| `monty_cad_sense`                        | the node features Monty's sensor module would store if it stood at a point and looked along a direction              |
-| `monty_cad_library`                      | samples the surface, takes that percept at every visit, and writes the gzipped library a run loads                   |
-| `monty_cad_libraries`                    | what this server has already learned, newest first: the object, the part, the node count and the file                |
-| `cad_plugin_list`, `cad_plugin_describe` | which experiments, learning modules and motor policies a cluster offers                                              |
+| Tool | Answer |
+| --- | --- |
+| `monty_cad_brief` | what quiddity recognised: the feature families and how many of each, and the faces no feature claims |
+| `monty_cad_features_near` | which features sit within a radius of a point, nearest first — the query a policy choosing where to sense next needs |
+| `monty_cad_next_feature` | which features lie ahead along a direction, within a cone, with the distance and the angle off it |
+| `monty_cad_on_face` | which feature claims a face — or that it is body, refused or unexplained |
+| `monty_cad_sense` | the node features Monty's sensor module would store if it stood at a point and looked along a direction |
+| `monty_cad_library` | samples the surface, takes that percept at every visit, and writes the gzipped library a run loads |
+| `monty_cad_libraries` | what this server has already learned, newest first: the object, the part, the node count and the file |
+| `cad_plugin_list`, `cad_plugin_describe` | which experiments, learning modules and motor policies a cluster offers |
 
 ## Two transports, one server
 
@@ -88,14 +88,7 @@ For a release, point at the binary instead — no Elixir, no `mix`, nothing to
 build on the machine that runs it:
 
 ```json
-{
-  "mcpServers": {
-    "cad": {
-      "command": "/opt/ex_monty_cad_server/bin/ex_monty_cad_server",
-      "args": ["mcp"]
-    }
-  }
-}
+{"mcpServers": {"cad": {"command": "/opt/ex_monty_cad_server/bin/ex_monty_cad_server", "args": ["mcp"]}}}
 ```
 
 **HTTP** — one message a request:
@@ -108,11 +101,7 @@ curl -s localhost:4000/mcp -H 'content-type: application/json' \
 A client that speaks streamable HTTP names the same endpoint:
 
 ```json
-{
-  "mcpServers": {
-    "cad": { "type": "http", "url": "http://localhost:4000/mcp" }
-  }
-}
+{"mcpServers": {"cad": {"type": "http", "url": "http://localhost:4000/mcp"}}}
 ```
 
 MCP Inspector, to try the tools without writing a client:
@@ -170,15 +159,16 @@ placement is not decoration:
 `cad_plugin_list` and `cad_plugin_describe` expose the same thing over the
 protocol, so a model can ask what the cluster has before calling anything.
 
-The kinds, the placements and `conforms?/1` are `MontyPlugin`'s (`ex_monty_plugin`),
-and this server's `Cluster` is a name for that package's registry: one contract for a
-plugin written here and one written in another repository.
+The kinds, the placements and `conforms?/1` are `MontyPlugin`'s
+(`ex_monty_plugin`), and this server's `Cluster` is a name for that package's
+registry: one contract for a plugin written here and one written in another
+repository.
 
-A list is worth what the node answering it can see, so the answer says which state it
-is in — discovery switched off (`PLUGIN_DISCOVERY=none`), a node that was never in a
-cluster (`:nonode@nohost`, with `NODE_NAME` and `NODE_COOKIE` named as the fix), or a
-cluster with a count. `0 plugin(s)` alone meant all three and read as "nothing is
-offered anywhere".
+A list is worth what the node answering it can see, so the answer says which state
+it is in — discovery switched off (`PLUGIN_DISCOVERY=none`), a node that was never
+in a cluster (`:nonode@nohost`, with `NODE_NAME` and `NODE_COOKIE` named as the
+fix), or a cluster with a count. `0 plugin(s)` alone meant all three, and read as
+"nothing is offered anywhere".
 
 ## Running it
 
@@ -261,17 +251,17 @@ is refused on the push that made it rather than at the tag.
 
 Environment, and what each one is for:
 
-| variable           | what it does                                                                                                                                                                                               |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`     | the Postgres to keep the catalogue in; without it, SQLite in `SQLITE_PATH`                                                                                                                                 |
-| `SQLITE_PATH`      | where the catalogue file goes (default `<DATA_DIR>/catalogue.db`)                                                                                                                                          |
-| `DATA_DIR`         | the directory a container mounts a volume at (default `/app/data`)                                                                                                                                         |
-| `PHX_SERVER`       | set by `bin/server`: start the endpoint. `bin/mcp` leaves it unset and serves nothing but the pipe                                                                                                         |
-| `SECRET_KEY_BASE`  | signs cookies; required only when the endpoint serves                                                                                                                                                      |
-| `NODE_NAME`        | the node's name, for a deployment that is one node of several — this is what makes plugins cluster-wide (`NODE_COOKIE` is its companion; a release spells them `RELEASE_NODE`/`RELEASE_COOKIE`)            |
-| `PLUGIN_SCOPE`     | the `:pg` scope plugins register in (default `monty_plugins`) — shared with every other node of the estate, so a policy offered by a Monty studio node and one offered here are the same thing to a caller |
-| `PLUGIN_DISCOVERY` | `pg` (default) or `none`: `none` takes this node out of the cluster, and `cad_plugin_list` says so rather than looking empty                                                                               |
-| `PORT`             | the endpoint's port (default 4000)                                                                                                                                                                         |
+| variable | what it does |
+| --- | --- |
+| `DATABASE_URL` | the Postgres to keep the catalogue in; without it, SQLite in `SQLITE_PATH` |
+| `SQLITE_PATH` | where the catalogue file goes (default `<DATA_DIR>/catalogue.db`) |
+| `DATA_DIR` | the directory a container mounts a volume at (default `/app/data`) |
+| `PHX_SERVER` | set by `bin/server`: start the endpoint. `bin/mcp` leaves it unset and serves nothing but the pipe |
+| `SECRET_KEY_BASE` | signs cookies; required only when the endpoint serves |
+| `NODE_NAME` | the node's name, for a deployment that is one node of several — this is what makes plugins cluster-wide (`NODE_COOKIE` is its companion; a release spells them `RELEASE_NODE`/`RELEASE_COOKIE`) |
+| `PLUGIN_SCOPE` | the `:pg` scope plugins register in (default `monty_plugins`) — shared with every other node of the estate, so a policy offered by a Monty studio node and one offered here are the same thing to a caller |
+| `PLUGIN_DISCOVERY` | `pg` (default) or `none`: `none` takes this node out of the cluster, and `cad_plugin_list` says so rather than looking empty |
+| `PORT` | the endpoint's port (default 4000) |
 
 ### In a container
 
