@@ -104,7 +104,10 @@ defmodule ExMontyCadServer.Policy.FeatureWalk do
   def handle_call(:describe, _from, state), do: {:reply, describe(), state}
 
   def handle_call({:new, _options}, _from, state) do
-    decide(state, fn opened -> {:ok, progress(new_walk(opened))} end)
+    decide(state, fn opened ->
+      walk = new_walk(opened)
+      {:ok, progress(walk)}
+    end)
   end
 
   # The framework's six arguments, the policy among them. This policy decides for
@@ -112,7 +115,7 @@ defmodule ExMontyCadServer.Policy.FeatureWalk do
   # the feature it is aiming at, both of which are in the progress it was given.
   def handle_call({:call, progress, ctx, observations, motor_state, percept, goal}, _from, state) do
     decide(state, fn opened ->
-      with {:ok, walk} <- restore(progress, opened) do
+      with {:ok, walk} <- resume(progress, opened) do
         {result, walk} = Walk.call(walk, ctx, observations, motor_state, percept, goal)
         {:ok, result, progress(walk)}
       end
@@ -121,7 +124,7 @@ defmodule ExMontyCadServer.Policy.FeatureWalk do
 
   def handle_call({:reset, progress}, _from, state) do
     decide(state, fn opened ->
-      with {:ok, walk} <- restore(progress, opened), do: {:ok, progress(Walk.reset(walk))}
+      with {:ok, walk} <- resume(progress, opened), do: {:ok, progress(Walk.reset(walk))}
     end)
   end
 
@@ -157,9 +160,11 @@ defmodule ExMontyCadServer.Policy.FeatureWalk do
 
   defp new_walk(opened), do: Walk.new(part: opened.part, recognition: opened.recognition)
 
-  defp progress(%Walk{} = walk), do: Walk.state_dict(walk)
+  # What a caller holds, from the walk's own account of what it did. One owner:
+  # the package answers this map, and a copy here would be a second answer.
+  defp progress(walk), do: Walk.state_dict(walk)
 
-  defp restore(progress, opened) when is_map(progress) do
+  defp resume(progress, opened) when is_map(progress) do
     walk = new_walk(opened)
 
     with {:ok, target} <- target(Map.get(progress, :target), walk.targets) do
@@ -167,13 +172,13 @@ defmodule ExMontyCadServer.Policy.FeatureWalk do
        %{
          walk
          | target: target,
-           visited: MapSet.new(Map.get(progress, :visited, [])),
+           visited: Map.get(progress, :visited, []),
            walked: Map.get(progress, :walked, 0)
        }}
     end
   end
 
-  defp restore(other, _opened), do: {:error, not_a_progress(other)}
+  defp resume(other, _opened), do: {:error, not_a_progress(other)}
 
   defp target(nil, _targets), do: {:ok, nil}
 
