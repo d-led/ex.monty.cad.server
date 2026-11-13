@@ -156,13 +156,8 @@ defmodule ExMontyCadServer.MixProject do
       # (`MontyPlugin.Capabilities`), which is the half a plugin's `needs` is
       # checked against — and the walk this node offers needs `quiddity` and
       # `monty`, so a host that could not say it carries them would have its own
-      # policy refused as unservable. It is committed and not yet released, so it
-      # is pinned to the commit; on release this line becomes
-      # `{:ex_monty_plugin, "~> 0.1.2"}`.
-      {:ex_monty_plugin,
-       github: "d-led/ex.monty.plugin",
-       rev: "7e0de811f273ac9c851ff6803fe9e169e017b0e2",
-       override: true},
+      # policy refused as unservable.
+      {:ex_monty_plugin, "~> 0.1.2"},
       # `0.5.0` is the version with the feature walk (`MontyCad.Policy.FeatureWalk`)
       # and with `MontyCad.Inputs`, which is where a part is a name in
       # `$MONTY_DATA/parts`. Committed and not yet released, so pinned to the
