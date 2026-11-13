@@ -12,12 +12,10 @@ defmodule ExMontyCadServer.Application do
       {DNSCluster,
        query: Application.get_env(:ex_monty_cad_server, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: ExMontyCadServer.PubSub},
-      # The cluster-wide process groups a plugin is registered in: `:pg` is what
-      # knows a name on one node on every other node, and what forgets it when a
-      # node goes down. The registry is `MontyPlugin.Registry`, shared with every
-      # other node of the estate, and its child is the `:pg` process under the
-      # scope `PLUGIN_SCOPE` names.
-      MontyPlugin.Registry,
+      # The plugin registry is not here: `MontyPlugin.Application` starts the
+      # `:pg` scope it uses, so this tree would be a second start of the same
+      # process. `PLUGIN_SCOPE` and `PLUGIN_DISCOVERY` decide which scope and
+      # whether there is one at all.
       # The catalogue: the parts this server has made a memory of and the
       # memories it wrote. Whichever repo `DATABASE_URL` chose at boot; it starts
       # before anything that would read or write it.
