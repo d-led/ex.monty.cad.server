@@ -167,7 +167,7 @@ Compares two revisions of a part — each a STEP file or a recognition JSON file
 
 ## monty_cad
 
-**monty_cad** — the memory: a sensed frame as Monty's own percept, and the labelled graph library a run loads.
+**monty_cad** — the memory: a sensed frame as the framework's own percept, and the labelled graph library a run loads.
 
 ### `monty_cad_brief` — What is this part?
 
@@ -224,7 +224,7 @@ Opens a STEP part and answers which feature claims a face — the id, the family
 
 ### `monty_cad_sense` — What would the sensor perceive here?
 
-Stands a patch sensor on the part at a point and looks along a direction, and answers what Monty's own observation processor makes of that frame: the node features a graph memory stores, which is the percept a run would have made at the same place.
+Stands a patch sensor on the part at a point and looks along a direction, and answers what the framework's own observation processor makes of that frame: the node features a graph memory stores, which is the percept a run would have made at the same place.
 
 | argument | type | required | what it is |
 | --- | --- | --- | --- |
@@ -238,7 +238,7 @@ Stands a patch sensor on the part at a point and looks along a direction, and an
 
 ### `monty_cad_library` — Write the graph memory a run loads
 
-Samples the part's surface, takes the percept at every visit, and writes the labelled library a Monty run loads: gzipped JSON lines, one record per node, in the shape a graph learning module reads. The labels are the recognition's own, so they are facts rather than guesses.
+Samples the part's surface, takes the percept at every visit, and writes the labelled library a run loads: gzipped JSON lines, one record per node, in the shape a graph learning module reads. The labels are the recognition's own, so they are facts rather than guesses.
 
 | argument | type | required | what it is |
 | --- | --- | --- | --- |
@@ -296,5 +296,5 @@ Asks one registered plugin what it says about itself: its version, whether it ca
 
 Every `initialize` answer carries this text, before a model has asked anything:
 
-> This server answers questions about a CAD part, and turns one into a graph memory that Monty can match against. A FILE: cadmpeg_formats says which formats this build reads and writes, and cadmpeg_inspect opens a path and answers the decode report — what was transferred and every loss with its reason. "It opened" and "it opened faithfully" are different answers. WHAT IS IN IT: monty_cad_brief opens the part and answers what quiddity recognised — the feature families and how many of each, and the faces no feature claims — which is the sentence a model needs before asking anything else. WHERE THE SENSOR WOULD STAND: monty_cad_sense takes a point and a direction and answers what Monty's own sensor module would perceive there: the node features a graph memory stores. WHICH FEATURE IS WHICH: monty_cad_on_face says what a face belongs to, monty_cad_features_near says what is around a point, and monty_cad_next_feature says what is ahead of one along a direction. Those three are the questions a policy asks before it chooses where to sense next. A MEMORY: monty_cad_library samples the part's surface, takes that percept at every visit, and writes the library a run loads — an object id, a node count, and how many nodes each feature family contributed. monty_cad_libraries says what has already been written, so a part is not sampled twice for nothing. THE GEOMETRY UNDERNEATH: the quiddity tools answer a face, a ray, a frame, a mesh and the surface samples directly, for a model that wants the numbers rather than a summary. WHAT A RUN IS MADE OF: cad_plugin_list says which experiments, learning modules and motor policies the cluster offers, and cad_plugin_describe asks one of them about itself — including whether it can be called from another node, which a policy that reads a part cannot. Paths are the interface. A native format that keeps parts of itself in files beside it is read against its own directory, which is why a file is named rather than bytes.
+> This server answers questions about a CAD part, and turns one into a graph memory that the Elixir Monty Studio can match against. A FILE: cadmpeg_formats says which formats this build reads and writes, and cadmpeg_inspect opens a path and answers the decode report — what was transferred and every loss with its reason. "It opened" and "it opened faithfully" are different answers. WHAT IS IN IT: monty_cad_brief opens the part and answers what quiddity recognised — the feature families and how many of each, and the faces no feature claims — which is the sentence a model needs before asking anything else. WHERE THE SENSOR WOULD STAND: monty_cad_sense takes a point and a direction and answers what the framework's own sensor module would perceive there: the node features a graph memory stores. WHICH FEATURE IS WHICH: monty_cad_on_face says what a face belongs to, monty_cad_features_near says what is around a point, and monty_cad_next_feature says what is ahead of one along a direction. Those three are the questions a policy asks before it chooses where to sense next. A MEMORY: monty_cad_library samples the part's surface, takes that percept at every visit, and writes the library a run loads — an object id, a node count, and how many nodes each feature family contributed. monty_cad_libraries says what has already been written, so a part is not sampled twice for nothing. THE GEOMETRY UNDERNEATH: the quiddity tools answer a face, a ray, a frame, a mesh and the surface samples directly, for a model that wants the numbers rather than a summary. WHAT A RUN IS MADE OF: cad_plugin_list says which experiments, learning modules and motor policies the cluster offers, and cad_plugin_describe asks one of them about itself — including whether it can be called from another node, which a policy that reads a part cannot. Paths are the interface. A native format that keeps parts of itself in files beside it is read against its own directory, which is why a file is named rather than bytes.
 

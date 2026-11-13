@@ -2,7 +2,7 @@ defmodule ExMontyCadServer.Mcp.MemoryTools do
   @moduledoc """
   The tools that need all three engines, which is the reason this server exists.
 
-  A part is read by quiddity, its percept is Monty's own sensor module's, and
+  A part is read by quiddity, its percept is the framework's own sensor module's, and
   what comes out is the library a run loads. Each tool answers in the shape the
   protocol asks for — a sentence for the model, and the numbers as structured
   content — and a refusal is text saying what to try, never a crash.
@@ -137,7 +137,8 @@ defmodule ExMontyCadServer.Mcp.MemoryTools do
       "title" => "What would the sensor perceive here?",
       "description" =>
         "Stands a patch sensor on the part at a point and looks along a " <>
-          "direction, and answers what Monty's own observation processor makes " <>
+          "direction, and answers what the framework's own observation processor " <>
+          "makes " <>
           "of that frame: the node features a graph memory stores, which is the " <>
           "percept a run would have made at the same place.",
       "inputSchema" => %{
@@ -168,7 +169,7 @@ defmodule ExMontyCadServer.Mcp.MemoryTools do
       "title" => "Write the graph memory a run loads",
       "description" =>
         "Samples the part's surface, takes the percept at every visit, and " <>
-          "writes the labelled library a Monty run loads: gzipped JSON lines, " <>
+          "writes the labelled library a run loads: gzipped JSON lines, " <>
           "one record per node, in the shape a graph learning module reads. The " <>
           "labels are the recognition's own, so they are facts rather than " <>
           "guesses.",

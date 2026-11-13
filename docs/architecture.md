@@ -1,7 +1,7 @@
 # How this server is put together
 
 Three engines, one protocol. cadmpeg reads a CAD file, quiddity names what is in
-it and answers the geometry, and Monty's own sensor module turns a sensed frame
+it and answers the geometry, and the framework's own sensor module turns a sensed frame
 into the percept a graph memory stores. This server is the surface over all three
 plus the things only a server can do: keep a part open between requests, remember
 what it has learned, and find the plugins other nodes offer.
@@ -74,7 +74,7 @@ motor policy. The registry is `MontyPlugin.Registry` from `ex_monty_plugin` —
 forgotten when a node goes down. `Registry` would not do: it is one node's table.
 
 The scope (`PLUGIN_SCOPE`, default `monty_plugins`) is shared with every other node
-of the estate, which is the point: a policy offered by a Monty studio node and a
+of the estate, which is the point: a policy offered by an Elixir Monty Studio node and a
 policy offered here are the same thing to a caller. `PLUGIN_DISCOVERY=none` takes a
 node out of the cluster, and `cad_plugin_list` says so rather than answering
 "0 plugins" — silence about a variable is the failure mode that costs an afternoon.

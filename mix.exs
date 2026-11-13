@@ -40,7 +40,7 @@ defmodule ExMontyCadServer.MixProject do
       description:
         "A Model Context Protocol server for CAD: cadmpeg reads the file, " <>
           "quiddity names what it found and answers the geometry underneath, " <>
-          "and Monty's own percept turns it into a graph memory a run loads.",
+          "and the framework's own percept turns it into a graph memory a run loads.",
       source_url: "https://github.com/d-led/ex.monty.cad.server"
     ]
   end
@@ -132,7 +132,7 @@ defmodule ExMontyCadServer.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
-      # The database: the same Postgres and Ecto the Monty app keeps its runs in,
+      # The database: the same Postgres and Ecto the studio app keeps its runs in,
       # and the same SQLite fallback so a release still works without a server.
       {:ecto_sql, "~> 3.13"},
       {:postgrex, ">= 0.0.0"},
@@ -141,7 +141,7 @@ defmodule ExMontyCadServer.MixProject do
       {:ex_doc, "~> 0.38", only: :dev, runtime: false},
       # The three engines the tools are made of. `ex_cadmpeg` reads the file,
       # `ex_quiddity` names what is in it and answers the geometry, and
-      # `ex_monty_cad` turns a frame into the percept Monty's sensor modules
+      # `ex_monty_cad` turns a frame into the percept the framework's sensor modules
       # make and writes the library a run loads.
       {:ex_cadmpeg, "~> 0.1"},
       {:ex_quiddity, "~> 0.1"},
@@ -169,7 +169,7 @@ defmodule ExMontyCadServer.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       # A suite runs against a database that exists and is migrated: the same
-      # two steps the Monty app's test alias takes before `test`.
+      # two steps the studio app's test alias takes before `test`.
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]
     ]

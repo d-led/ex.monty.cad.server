@@ -5,7 +5,8 @@ defmodule ExMontyCadServer.Mcp do
 
   `cadmpeg` reads the file and says what was lost reading it. `quiddity` takes
   the geometry and names what is in it, so a face is a hole rather than a
-  surface. `MontyCad` takes a frame of that geometry and answers what Monty's own
+  surface. `MontyCad` takes a frame of that geometry and answers what the
+  framework's own
   sensor module would perceive there, and writes the labelled library a run
   loads.
 
@@ -149,7 +150,7 @@ defmodule ExMontyCadServer.Mcp do
        "capabilities" => %{"tools" => %{"listChanged" => false}},
        "serverInfo" => %{
          "name" => "ex-monty-cad-server",
-         "title" => "CAD, named, and as a Monty graph memory",
+         "title" => "CAD, named, and as an Elixir Monty Studio graph memory",
          "version" => version()
        },
        "instructions" => instructions()
@@ -195,7 +196,7 @@ defmodule ExMontyCadServer.Mcp do
   def instructions do
     """
     This server answers questions about a CAD part, and turns one into a graph
-    memory that Monty can match against.
+    memory that the Elixir Monty Studio can match against.
 
     A FILE: cadmpeg_formats says which formats this build reads and writes, and
     cadmpeg_inspect opens a path and answers the decode report — what was
@@ -208,7 +209,7 @@ defmodule ExMontyCadServer.Mcp do
     else.
 
     WHERE THE SENSOR WOULD STAND: monty_cad_sense takes a point and a direction
-    and answers what Monty's own sensor module would perceive there: the node
+    and answers what the framework's own sensor module would perceive there: the node
     features a graph memory stores.
 
     WHICH FEATURE IS WHICH: monty_cad_on_face says what a face belongs to,

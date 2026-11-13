@@ -7,7 +7,7 @@ questions about the same part:
 | --- | --- |
 | [cadmpeg](https://github.com/cadmpeg/cadmpeg) | What is in this file, and how faithfully was it read? |
 | [quiddity](https://github.com/pzfreo/quiddity) | What are the features, and what does the geometry look like where a sensor would stand? |
-| Monty, via [ex_monty_cad](https://github.com/d-led/ex.monty.cad) | What would Monty's own observation processor perceive there, and what library would a run load? |
+| Elixir Monty Studio, via [ex_monty_cad](https://github.com/d-led/ex.monty.cad) | What would the framework's own observation processor perceive there, and what library would a run load? |
 
 The protocol is the interface. A tool call is the unit of work, so the same server
 is usable by an assistant over stdio, by a program over HTTP, and by anything that
@@ -59,7 +59,7 @@ From this server, over all three:
 | `monty_cad_features_near` | which features sit within a radius of a point, nearest first — the query a policy choosing where to sense next needs |
 | `monty_cad_next_feature` | which features lie ahead along a direction, within a cone, with the distance and the angle off it |
 | `monty_cad_on_face` | which feature claims a face — or that it is body, refused or unexplained |
-| `monty_cad_sense` | the node features Monty's sensor module would store if it stood at a point and looked along a direction |
+| `monty_cad_sense` | the node features the framework's sensor module would store if it stood at a point and looked along a direction |
 | `monty_cad_library` | samples the surface, takes that percept at every visit, and writes the gzipped library a run loads |
 | `monty_cad_libraries` | what this server has already learned, newest first: the object, the part, the node count and the file |
 | `cad_plugin_list`, `cad_plugin_describe` | which experiments, learning modules and motor policies a cluster offers |
@@ -290,7 +290,7 @@ changes.
 
 - Not a CAD editor: it reads, reports, converts and samples. There is no toolbar
   and no save button.
-- Not a Monty framework: the framework is Monty's, reached through
+- Not a framework of ours: the framework is the upstream one, ported into
   `ex_tbp_monty_core`. This server is the join between a drawing and a memory.
 - Not a training run either: `monty_cad_library` writes the library a run loads;
   running the experiment is the studio's job, not this server's.

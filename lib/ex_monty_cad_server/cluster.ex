@@ -32,7 +32,8 @@ defmodule ExMontyCadServer.Cluster do
 
   This module is the server's name for that: the registry itself is
   `MontyPlugin.Registry`, shared with every other node in the estate, so an
-  experiment offered by a Monty studio node and a policy offered here are the same
+  experiment offered by an Elixir Monty Studio node and a policy offered here are the
+  same
   kind of thing to a caller.
 
   ## Placement is not decoration

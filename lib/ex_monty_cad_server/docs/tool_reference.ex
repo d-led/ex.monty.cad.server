@@ -22,7 +22,8 @@ defmodule ExMontyCadServer.Docs.ToolReference do
       "the geometry: feature recognition (bosses, holes, risers, pockets, chamfers), the " <>
         "frames a sensor perceives, and the exact surface underneath a feature",
     "monty_cad" =>
-      "the memory: a sensed frame as Monty's own percept, and the labelled graph library " <>
+      "the memory: a sensed frame as the framework's own percept, and the labelled " <>
+        "graph library " <>
         "a run loads",
     "cluster" =>
       "the plugins other nodes offer: experiments, learning modules and motor policies, " <>
