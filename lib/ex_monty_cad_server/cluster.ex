@@ -86,7 +86,29 @@ defmodule ExMontyCadServer.Cluster do
 
   A name nobody offers is an error that names the ones there are, because the
   caller is usually a model that can pick another.
+
+  This answers *a* provider, which is right for an `:anywhere` plugin and wrong
+  for an `:owner_only` one. That question is `lookup/3`.
   """
   @spec lookup(kind(), String.t()) :: {:ok, provider()} | {:error, String.t()}
   def lookup(kind, name), do: MontyPlugin.Registry.lookup(kind, name)
+
+  @doc """
+  The provider under a name, on a named node.
+
+  A policy that reads a part's B-rep has to be called on the node that opened the
+  part, so "somebody offers it" is not the answer a caller needs — "is it offered
+  *there*" is. The error names the nodes that do offer it.
+  """
+  @spec lookup(kind(), String.t(), on :: node()) :: {:ok, provider()} | {:error, String.t()}
+  def lookup(kind, name, on), do: MontyPlugin.Registry.lookup(kind, name, on)
+
+  @doc """
+  The nodes this one is talking to, itself included.
+
+  What a caller may name as a node: `:pg` answers for nodes that are up, and an
+  atom made from a string a caller sent is a leak rather than a name.
+  """
+  @spec nodes() :: [node()]
+  def nodes, do: [node() | Node.list()]
 end

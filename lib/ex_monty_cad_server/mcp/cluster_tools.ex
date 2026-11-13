@@ -46,6 +46,13 @@ defmodule ExMontyCadServer.Mcp.ClusterTools do
             "type" => "string",
             "enum" => Enum.map(Cluster.kinds(), &Atom.to_string/1),
             "description" => "the kind it is registered as"
+          },
+          "node" => %{
+            "type" => "string",
+            "description" =>
+              "ask on this node — an `:owner_only` plugin can only be called " <>
+                "where its state is, and this is how a caller checks that the " <>
+                "node holding its part offers it"
           }
         },
         "required" => ["name", "kind"]
@@ -138,7 +145,7 @@ defmodule ExMontyCadServer.Mcp.ClusterTools do
   defp describe(arguments, facts) do
     with {:ok, name} <- required(arguments, "name"),
          {:ok, kind} <- one_kind(arguments),
-         {:ok, provider} <- Cluster.lookup(kind, name) do
+         {:ok, provider} <- on(arguments, kind, name) do
       {:ok,
        %{
          text: """
@@ -148,6 +155,30 @@ defmodule ExMontyCadServer.Mcp.ClusterTools do
        }, facts}
     else
       {:error, message} -> {:error, message <> unseen(facts), facts}
+    end
+  end
+
+  # "Somebody offers it" is not what an `:owner_only` plugin needs to hear — "it is
+  # offered *there*" is — so a caller may name the node it has the part on.
+  defp on(arguments, kind, name) do
+    case Map.get(arguments, "node") do
+      nil -> Cluster.lookup(kind, name)
+      asked -> with {:ok, node} <- connected(asked), do: Cluster.lookup(kind, name, node)
+    end
+  end
+
+  # A node arrives as text, so it is matched against the nodes this one is talking
+  # to rather than turned into an atom: `String.to_atom/1` on what a caller sent is
+  # a table nothing frees.
+  defp connected(asked) do
+    case Enum.find(Cluster.nodes(), &(Atom.to_string(&1) == asked)) do
+      nil ->
+        {:error,
+         "no node called #{inspect(asked)} is connected; this one reaches: " <>
+           Enum.map_join(Cluster.nodes(), ", ", &to_string/1)}
+
+      node ->
+        {:ok, node}
     end
   end
 

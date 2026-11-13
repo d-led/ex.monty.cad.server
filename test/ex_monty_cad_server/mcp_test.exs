@@ -212,6 +212,38 @@ defmodule ExMontyCadServer.McpTest do
       refute text_of(reply["result"]) =~ "not part of a cluster"
     end
 
+    test "a plugin can be asked about on a named node, which is what an owner-only one needs" do
+      {:ok, _pid} =
+        ExMontyCadServer.TestPlugin.registered(:motor_policy, "follow_chamfers",
+          describe: %{"name" => "follow_chamfers", "kind" => :motor_policy}
+        )
+
+      arguments = %{
+        "name" => "follow_chamfers",
+        "kind" => "motor_policy",
+        "node" => to_string(node())
+      }
+
+      {reply, _state} = call_tool("cad_plugin_describe", arguments)
+
+      assert text_of(reply["result"]) =~ "follow_chamfers"
+      assert text_of(reply["result"]) =~ to_string(node())
+    end
+
+    test "a node that is not connected is refused, with the ones that are" do
+      arguments = %{
+        "name" => "follow_chamfers",
+        "kind" => "motor_policy",
+        "node" => "there@nohost"
+      }
+
+      {reply, _state} = call_tool("cad_plugin_describe", arguments)
+
+      text = text_of(reply["result"])
+      assert text =~ "no node called \"there@nohost\" is connected"
+      assert text =~ to_string(node())
+    end
+
     test "a node in a cluster counts what it offers" do
       {reply, _state} = call_tool("cad_plugin_list", %{}, on_a_node(clustered: true))
 

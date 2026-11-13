@@ -286,6 +286,7 @@ Asks one registered plugin what it says about itself: its version, whether it ca
 | --- | --- | --- | --- |
 | `kind` | string | yes | the kind it is registered as |
 | `name` | string | yes | the plugin's name |
+| `node` | string | no | ask on this node — an `:owner_only` plugin can only be called where its state is, and this is how a caller checks that the node holding its part offers it |
 
 
 **read-only: it changes nothing.**
