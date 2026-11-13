@@ -54,6 +54,10 @@ jobs:
       # in one place and not the other is a page that lies about the server, and
       # this is where that is noticed.
       - run: mix ex_monty_cad_server.tools_doc --check
+      # A version edited in `mix.exs` and not in `VERSION` survives until the tag,
+      # and then the tag is refused — so the disagreement is caught on the push
+      # that made it.
+      - run: elixir scripts/release.exs check
 
   test:
     runs-on: ubuntu-24.04

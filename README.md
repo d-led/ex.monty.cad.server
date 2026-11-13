@@ -224,6 +224,17 @@ table.
 A tag (`v*.*.*`) builds the release on Linux in CI and attaches the archive to a
 GitHub release; the tag, `VERSION` and `mix.exs` have to agree or the job refuses.
 
+The version is moved by a script rather than by hand, and so is the tag:
+
+```sh
+elixir scripts/release.exs bump patch     # 0.1.0 -> 0.1.1, in VERSION and mix.exs
+git add -A && git commit -m "release: 0.1.1" && git push
+./scripts/tag_and_push_version.sh          # refuses a dirty tree or red CI
+```
+
+`scripts/release.exs check` runs in CI too, so a version edited in one file by hand
+is refused on the push that made it rather than at the tag.
+
 Environment, and what each one is for:
 
 | variable | what it does |
