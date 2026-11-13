@@ -233,7 +233,9 @@ Environment, and what each one is for:
 | `DATA_DIR` | the directory a container mounts a volume at (default `/app/data`) |
 | `PHX_SERVER` | set by `bin/server`: start the endpoint. `bin/mcp` leaves it unset and serves nothing but the pipe |
 | `SECRET_KEY_BASE` | signs cookies; required only when the endpoint serves |
-| `NODE_NAME` | the node's name, for a deployment that is one node of several — this is what makes plugins cluster-wide |
+| `NODE_NAME` | the node's name, for a deployment that is one node of several — this is what makes plugins cluster-wide (`NODE_COOKIE` is its companion; a release spells them `RELEASE_NODE`/`RELEASE_COOKIE`) |
+| `PLUGIN_SCOPE` | the `:pg` scope plugins register in (default `monty_plugins`) — shared with every other node of the estate, so a policy offered by a Monty studio node and one offered here are the same thing to a caller |
+| `PLUGIN_DISCOVERY` | `pg` (default) or `none`: `none` takes this node out of the cluster, and `cad_plugin_list` says so rather than looking empty |
 | `PORT` | the endpoint's port (default 4000) |
 
 ### In a container

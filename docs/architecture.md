@@ -68,9 +68,18 @@ The reference for all nineteen tools — every engine's, with argument schemas �
 ## The cluster
 
 A plugin is a process another node offers: an experiment, a learning module, a
-motor policy. `ExMontyCadServer.Cluster` keeps them in `:pg`, whose point is that
-a name joined on one node is visible on every node and forgotten when a node goes
-down. `Registry` would not do: it is one node's table.
+motor policy. The registry is `MontyPlugin.Registry` from `ex_monty_plugin` —
+`ExMontyCadServer.Cluster` is this server's name for it — and it keeps them in
+`:pg`, whose point is that a name joined on one node is visible on every node and
+forgotten when a node goes down. `Registry` would not do: it is one node's table.
+
+The scope (`PLUGIN_SCOPE`, default `monty_plugins`) is shared with every other node
+of the estate, which is the point: a policy offered by a Monty studio node and a
+policy offered here are the same thing to a caller. `PLUGIN_DISCOVERY=none` takes a
+node out of the cluster, and `cad_plugin_list` says so rather than answering
+"0 plugins" — silence about a variable is the failure mode that costs an afternoon.
+The `:pg` process itself is started by that package's application, so this server's
+tree does not start it a second time.
 
 A provider answers `:describe` with its name, kind, version, what it needs, and
 where it may run. `placement: :owner_only` exists because a B-rep handle cannot
