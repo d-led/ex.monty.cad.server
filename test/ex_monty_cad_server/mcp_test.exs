@@ -2,6 +2,7 @@ defmodule ExMontyCadServer.McpTest do
   use ExMontyCadServer.DataCase, async: true
 
   alias ExMontyCadServer.Mcp
+  alias ExMontyCadServer.Mcp.ClusterTools
 
   @fixture Path.expand("../fixtures/golden_simple_through_hole.step", __DIR__)
 
@@ -182,6 +183,27 @@ defmodule ExMontyCadServer.McpTest do
       assert text =~ "plugin discovery is off on this node"
       assert text =~ "PLUGIN_DISCOVERY"
       assert reply["result"]["structuredContent"]["providers"] == []
+    end
+
+    # This VM is distributed (the test helper starts it that way), so the sentence
+    # for a node outside a cluster is asked for rather than provoked: "0 plugins"
+    # read as "nothing is offered anywhere" until a release over stdio said it on a
+    # node that had never been in a cluster at all.
+    test "a node that was never in a cluster says that, not that the cluster is empty" do
+      facts = %{discovery: true, discovery_var: nil, clustered: false}
+
+      text = ClusterTools.summary([], facts)
+
+      assert text =~ "not part of a cluster"
+      assert text =~ "NODE_NAME"
+      refute text =~ "nothing is registered"
+    end
+
+    test "a node in a cluster counts what it offers" do
+      facts = %{discovery: true, discovery_var: nil, clustered: true}
+
+      assert ClusterTools.summary([], facts) =~
+               "0 plugin(s) on this cluster: nothing is registered"
     end
 
     test "names a plugin whose answer cannot be used as such" do

@@ -83,17 +83,52 @@ defmodule ExMontyCadServer.Mcp.ClusterTools do
      state}
   end
 
-  # A node that takes no part in a cluster has no plugins for a reason that is
-  # worth saying: "0 plugins" reads as "nothing is offered anywhere", and the fix
-  # is a variable rather than a colleague.
-  defp summary(providers) do
-    if MontyPlugin.Registry.enabled?() do
-      "#{length(providers)} plugin(s) on this cluster: #{listing(providers)}"
-    else
-      "plugin discovery is off on this node " <>
-        "(PLUGIN_DISCOVERY=#{inspect(System.get_env("PLUGIN_DISCOVERY"))}), so it " <>
-        "joined no cluster and offers nothing. `PLUGIN_DISCOVERY=pg` is how it takes part."
-    end
+  # A node that takes no part in a cluster, and a node that was never in one, have
+  # nothing for a different reason, and "0 plugins" reads as "nothing is offered
+  # anywhere" for both. So the sentence says which it is, and names the fix — a
+  # variable, not a colleague.
+  #
+  # The facts are passed in rather than read here because they are the VM's: a test
+  # that wants the sentence for a node outside a cluster cannot make this VM stop
+  # being in one, and an untested sentence is how the misleading one survived.
+  @typedoc """
+  What decides how the list is said: whether this node takes part at all, and
+  whether it is in a cluster.
+  """
+  @type facts :: %{discovery: boolean(), discovery_var: String.t() | nil, clustered: boolean()}
+
+  @doc """
+  The answer to `cad_plugin_list`, as a sentence.
+
+  `facts/1` is the default, which is what the tool uses; a test passes its own.
+  """
+  @spec summary([Cluster.provider()], facts()) :: String.t()
+  def summary(providers, facts \\ facts())
+
+  def summary(_providers, %{discovery: false, discovery_var: var}) do
+    "plugin discovery is off on this node (PLUGIN_DISCOVERY=#{inspect(var)}), so it " <>
+      "joined no cluster and offers nothing. `PLUGIN_DISCOVERY=pg` is how it takes part."
+  end
+
+  def summary(providers, %{clustered: false}) do
+    "#{length(providers)} plugin(s) on this node (named #{Node.self()}), which is not " <>
+      "part of a cluster: a node without a name reaches no other node, so a plugin " <>
+      "elsewhere cannot be seen from here. `NODE_NAME` and `NODE_COOKIE` are what join " <>
+      "one — `elixir --sname cad -S mix` is the same in development."
+  end
+
+  def summary(providers, _facts) do
+    "#{length(providers)} plugin(s) on this cluster: #{listing(providers)}"
+  end
+
+  @doc "The facts `summary/2` reads, as this VM has them."
+  @spec facts() :: facts()
+  def facts do
+    %{
+      discovery: MontyPlugin.Registry.enabled?(),
+      discovery_var: System.get_env("PLUGIN_DISCOVERY"),
+      clustered: Node.alive?()
+    }
   end
 
   defp describe(arguments, state) do
