@@ -148,7 +148,7 @@ defmodule ExMontyCadServer.MixProject do
       # The contract a plugin and a cluster share, and the `:pg` registry that
       # carries the answer between nodes. Until it is on Hex this is the
       # repository it will be published from.
-      {:ex_monty_plugin, github: "d-led/ex_monty_plugin"},
+      {:ex_monty_plugin, github: "d-led/ex.monty.plugin"},
       # Until the package is on Hex this is the repository it will be published
       # from; `mix.lock` pins the commit, so a clone builds the same code.
       {:ex_monty_cad, github: "d-led/ex.monty.cad"},
