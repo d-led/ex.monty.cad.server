@@ -153,11 +153,10 @@ defmodule ExMontyCadServer.MixProject do
       # contract is the one thing two packages have to agree about, so agreement
       # is a version.
       {:ex_monty_plugin, "~> 0.1.1"},
-      # Still a checkout: `0.3.0` — the version that takes the contract from the
-      # package instead of carrying its own copy — is on its way through the
-      # release pipeline, and the requirement becomes `~> 0.3` when it is
-      # approved. `mix.lock` pins the commit, so a clone builds the same code.
-      {:ex_monty_cad, github: "d-led/ex.monty.cad"},
+      # From Hex too: `0.3.0` is the version that takes the contract from the
+      # package instead of carrying its own copy, so the two packages agree about
+      # a plugin's description by agreeing about a version.
+      {:ex_monty_cad, "~> 0.3"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
