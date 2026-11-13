@@ -24,6 +24,7 @@ defmodule ExMontyCadServer.Mcp do
   question about the same file does not read it again.
   """
 
+  alias ExMontyCadServer.Mcp.ClusterTools
   alias ExMontyCadServer.Mcp.Tools
 
   @protocol_versions ~w(2025-06-18 2025-03-26 2024-11-05)
@@ -33,7 +34,7 @@ defmodule ExMontyCadServer.Mcp do
           cadmpeg: map(),
           quiddity: map(),
           monty_cad: map(),
-          cluster: map()
+          cluster: ClusterTools.facts()
         }
 
   @doc "The protocol revisions this server speaks, newest first."
@@ -50,9 +51,11 @@ defmodule ExMontyCadServer.Mcp do
       # about another module's internals.
       quiddity: %{parts: %{}},
       monty_cad: %{},
-      # The cluster tools answer from `:pg`, which the cluster keeps; nothing to
-      # remember between messages.
-      cluster: %{}
+      # Whether this node is in a cluster, and whether it looks for plugins at
+      # all, are decided at boot and cannot change while it runs — so they are
+      # read once here, and every answer this session gives about the cluster says
+      # the same thing about it.
+      cluster: ClusterTools.facts()
     }
   end
 

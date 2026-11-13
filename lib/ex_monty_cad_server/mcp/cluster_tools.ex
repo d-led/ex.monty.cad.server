@@ -62,25 +62,33 @@ defmodule ExMontyCadServer.Mcp.ClusterTools do
   @spec names() :: [String.t()]
   def names, do: Enum.map(@catalogue, & &1["name"])
 
-  @doc "One tool call: its answer and the state after it."
-  @spec call(String.t(), map(), map()) :: {atom(), term(), map()}
-  def call("cad_plugin_list", arguments, state), do: list(arguments, state)
+  @doc """
+  One tool call: its answer, and this node's facts after it.
 
-  def call("cad_plugin_describe", arguments, state), do: describe(arguments, state)
+  The slice of the session state that this module is handed *is* the facts
+  (`Mcp.fresh/0` puts them there), because they are decided at boot and cannot
+  change while a session lives.
+  """
+  @spec call(String.t(), map(), facts()) :: {atom(), term(), facts()}
+  def call("cad_plugin_list", arguments, facts), do: list(arguments, facts)
 
-  def call(name, _arguments, state), do: {:error, "no such tool: #{name}", state}
+  def call("cad_plugin_describe", arguments, facts), do: describe(arguments, facts)
 
-  defp list(arguments, state) do
+  def call(name, _arguments, facts), do: {:error, "no such tool: #{name}", facts}
+
+  defp list(arguments, facts) do
     case kinds(arguments) do
-      {:ok, kinds} -> listed(Enum.flat_map(kinds, &Cluster.providers/1), state)
-      {:error, message} -> {:error, message, state}
+      {:ok, kinds} -> listed(Enum.flat_map(kinds, &Cluster.providers/1), facts)
+      {:error, message} -> {:error, message, facts}
     end
   end
 
-  defp listed(providers, state) do
+  defp listed(providers, facts) do
     {:ok,
-     %{text: summary(providers), structured: %{"providers" => Enum.map(providers, &encode/1)}},
-     state}
+     %{
+       text: summary(providers, facts),
+       structured: %{"providers" => Enum.map(providers, &encode/1)}
+     }, facts}
   end
 
   # A node that takes no part in a cluster, and a node that was never in one, have
@@ -88,41 +96,19 @@ defmodule ExMontyCadServer.Mcp.ClusterTools do
   # anywhere" for both. So the sentence says which it is, and names the fix — a
   # variable, not a colleague.
   #
-  # The facts are passed in rather than read here because they are the VM's: a test
-  # that wants the sentence for a node outside a cluster cannot make this VM stop
-  # being in one, and an untested sentence is how the misleading one survived.
+  # The facts come from the session state rather than from this module, because they
+  # are decided at boot: a test that wants the sentence for a node outside a cluster
+  # cannot make this VM stop being in one, and an untested sentence is how the
+  # misleading one survived.
   @typedoc """
-  What decides how the list is said: whether this node takes part at all, and
-  whether it is in a cluster.
+  What decides how the cluster is spoken about: whether this node takes part at all,
+  and whether it is in a cluster.
   """
   @type facts :: %{discovery: boolean(), discovery_var: String.t() | nil, clustered: boolean()}
 
   @doc """
-  The answer to `cad_plugin_list`, as a sentence.
-
-  `facts/1` is the default, which is what the tool uses; a test passes its own.
+  This node's facts, as the VM has them — read once, when a session starts.
   """
-  @spec summary([Cluster.provider()], facts()) :: String.t()
-  def summary(providers, facts \\ facts())
-
-  def summary(_providers, %{discovery: false, discovery_var: var}) do
-    "plugin discovery is off on this node (PLUGIN_DISCOVERY=#{inspect(var)}), so it " <>
-      "joined no cluster and offers nothing. `PLUGIN_DISCOVERY=pg` is how it takes part."
-  end
-
-  def summary(providers, %{clustered: false}) do
-    "#{length(providers)} plugin(s) on this node: #{listing(providers)}. It is named " <>
-      "#{Node.self()}, which is not part of a cluster — a node without a name reaches " <>
-      "no other node, so a plugin elsewhere cannot be seen from here. `NODE_NAME` and " <>
-      "`NODE_COOKIE` are what join one; `elixir --sname cad -S mix` does the same in " <>
-      "development."
-  end
-
-  def summary(providers, _facts) do
-    "#{length(providers)} plugin(s) on this cluster: #{listing(providers)}"
-  end
-
-  @doc "The facts `summary/2` reads, as this VM has them."
   @spec facts() :: facts()
   def facts do
     %{
@@ -132,7 +118,24 @@ defmodule ExMontyCadServer.Mcp.ClusterTools do
     }
   end
 
-  defp describe(arguments, state) do
+  defp summary(_providers, %{discovery: false, discovery_var: var}) do
+    "plugin discovery is off on this node (PLUGIN_DISCOVERY=#{inspect(var)}), so it " <>
+      "joined no cluster and offers nothing. `PLUGIN_DISCOVERY=pg` is how it takes part."
+  end
+
+  defp summary(providers, %{clustered: false}) do
+    "#{length(providers)} plugin(s) on this node: #{listing(providers)}. It is named " <>
+      "#{Node.self()}, which is not part of a cluster — a node without a name reaches " <>
+      "no other node, so a plugin elsewhere cannot be seen from here. `NODE_NAME` and " <>
+      "`NODE_COOKIE` are what join one; `elixir --sname cad -S mix` does the same in " <>
+      "development."
+  end
+
+  defp summary(providers, _facts) do
+    "#{length(providers)} plugin(s) on this cluster: #{listing(providers)}"
+  end
+
+  defp describe(arguments, facts) do
     with {:ok, name} <- required(arguments, "name"),
          {:ok, kind} <- one_kind(arguments),
          {:ok, provider} <- Cluster.lookup(kind, name) do
@@ -142,11 +145,21 @@ defmodule ExMontyCadServer.Mcp.ClusterTools do
          #{provider.name} — #{kind}, offered by #{provider.node}: #{spoken(provider.describe)}
          """,
          structured: encode(provider)
-       }, state}
+       }, facts}
     else
-      {:error, message} -> {:error, message, state}
+      {:error, message} -> {:error, message <> unseen(facts), facts}
     end
   end
+
+  # A plugin that is not here may be nowhere, or may be somewhere this node cannot
+  # look: the registry can only say "not here", so the node's part in it is added.
+  defp unseen(%{clustered: false, discovery: true}) do
+    " — and this node is not part of a cluster (it is named #{Node.self()}), so " <>
+      "another node's plugins cannot be seen from here; `NODE_NAME` and `NODE_COOKIE` " <>
+      "join one."
+  end
+
+  defp unseen(_facts), do: ""
 
   defp kinds(%{"kind" => kind}) do
     case one_kind(%{"kind" => kind}) do

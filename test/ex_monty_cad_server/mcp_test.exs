@@ -2,7 +2,6 @@ defmodule ExMontyCadServer.McpTest do
   use ExMontyCadServer.DataCase, async: true
 
   alias ExMontyCadServer.Mcp
-  alias ExMontyCadServer.Mcp.ClusterTools
 
   @fixture Path.expand("../fixtures/golden_simple_through_hole.step", __DIR__)
 
@@ -185,32 +184,38 @@ defmodule ExMontyCadServer.McpTest do
       assert reply["result"]["structuredContent"]["providers"] == []
     end
 
-    # This VM may or may not be distributed — the test helper asks for it, and CI
-    # says no — so the sentence for a node outside a cluster is asked for, facts and
-    # all: "0 plugins" read as "nothing is offered anywhere" until a release over
-    # stdio said it on a node that had never been in a cluster at all.
+    # This VM may or may not be distributed — the test helper asks for one, and CI
+    # says no — so the facts are stated rather than provoked. "0 plugins" read as
+    # "nothing is offered anywhere" until a release over stdio said it on a node
+    # that had never been in a cluster at all.
     test "a node outside a cluster still names what it has, and says it has no cluster" do
-      facts = %{discovery: true, discovery_var: nil, clustered: false}
+      {:ok, _pid} =
+        ExMontyCadServer.TestPlugin.registered(:motor_policy, "follow_chamfers",
+          describe: %{"name" => "follow_chamfers", "kind" => :motor_policy}
+        )
 
-      provider = %{
-        name: "follow_chamfers",
-        kind: :motor_policy,
-        node: :nonode@nohost,
-        describe: {:ok, %{"name" => "follow_chamfers"}}
-      }
+      {reply, _state} = call_tool("cad_plugin_list", %{}, on_a_node(clustered: false))
 
-      text = ClusterTools.summary([provider], facts)
-
+      text = text_of(reply["result"])
       assert text =~ "motor_policy: follow_chamfers"
       assert text =~ "not part of a cluster"
       assert text =~ "NODE_NAME"
     end
 
-    test "a node in a cluster counts what it offers" do
-      facts = %{discovery: true, discovery_var: nil, clustered: true}
+    test "a plugin that is not here is not said to be nowhere, when this node cannot look" do
+      arguments = %{"name" => "elsewhere", "kind" => "motor_policy"}
 
-      assert ClusterTools.summary([], facts) =~
-               "0 plugin(s) on this cluster: nothing is registered"
+      {reply, _state} = call_tool("cad_plugin_describe", arguments, on_a_node(clustered: false))
+      assert text_of(reply["result"]) =~ "not part of a cluster"
+
+      {reply, _state} = call_tool("cad_plugin_describe", arguments, on_a_node(clustered: true))
+      refute text_of(reply["result"]) =~ "not part of a cluster"
+    end
+
+    test "a node in a cluster counts what it offers" do
+      {reply, _state} = call_tool("cad_plugin_list", %{}, on_a_node(clustered: true))
+
+      assert text_of(reply["result"]) =~ "on this cluster"
     end
 
     test "names a plugin whose answer cannot be used as such" do
@@ -384,6 +389,12 @@ defmodule ExMontyCadServer.McpTest do
 
   # A tool call with the session it happens in, which a second call in the same
   # test needs: what the first one learned is state, not a database lookup.
+  # The two facts about this node that a session reads once: a test states them
+  # rather than provoking a VM that is not distributed.
+  defp on_a_node(clustered: clustered) do
+    %{Mcp.fresh() | cluster: %{discovery: true, discovery_var: nil, clustered: clustered}}
+  end
+
   defp call_tool(name, arguments, state \\ Mcp.fresh()) do
     message = %{
       "jsonrpc" => "2.0",
