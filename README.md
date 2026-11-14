@@ -235,8 +235,22 @@ makes `bin/migrate` the deploy step). `bin/mcp` migrates too, so a client that
 launches a release on a fresh machine finds a catalogue rather than a missing
 table.
 
-A tag (`v*.*.*`) builds the release on Linux in CI and attaches the archive to a
+A tag (`v*.*.*`) builds the release and attaches one archive per platform to a
 GitHub release; the tag, `VERSION` and `mix.exs` have to agree or the job refuses.
+An archive is not portable — the two Rust engines in it are compiled for the
+machine that built it — so the workflow builds two:
+
+    ex_monty_cad_server-v0.2.0-linux-x86_64.tar.gz    # ubuntu-24.04
+    ex_monty_cad_server-v0.2.0-macos-arm64.tar.gz     # macos-15, an arm64 runner
+
+Both are attached by the same run, and one platform failing does not withhold the
+other. To rebuild the archives for the version already in `VERSION` — without
+moving a tag — dispatch the workflow; the release it fills is the one `VERSION`
+names, and an asset of the same name is replaced rather than duplicated:
+
+```sh
+gh workflow run release.yml --ref main
+```
 
 The version is moved by a script rather than by hand, and so is the tag:
 
@@ -279,12 +293,24 @@ container. `DATABASE_URL` switches it to Postgres, and without one the catalogue
 is a file inside the container — mount a volume at the directory
 `SQLITE_PATH` names, or point it elsewhere than the default.
 
-## Dependencies, and one that is not on Hex yet
+## Dependencies
 
-`ex_quiddity` and `ex_cadmpeg` are on Hex. `ex_monty_cad` is a `git` dependency
-here, pinned by `mix.lock`, because the package has not been published; the day it
-is, the line in `mix.exs` becomes `{:ex_monty_cad, "~> 0.1"}` and nothing else
-changes.
+`ex_quiddity` and `ex_cadmpeg` are the two Rust engines, and `ex_monty_cad` is
+what turns a frame into the percept the framework's sensor modules make and
+writes the library a run loads. All three are on Hex and `mix.lock` pins what a
+release was built against:
+
+```elixir
+{:ex_cadmpeg, "~> 0.1"},
+{:ex_quiddity, "~> 0.1"},
+{:ex_monty_cad, "~> 0.6"},
+```
+
+The pin matters for a reason beyond the usual one: a memory written by one
+`ex_monty_cad` is read by another, and `0.6.1` is the release that samples each
+part at its own spacing instead of one number of millimetres for all of them — a
+library written before it is a library of two densities, and a recognition run
+over it answers a question about density.
 
 ## What this is not
 
