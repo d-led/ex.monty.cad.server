@@ -28,9 +28,18 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Elixir comes before the agreement check, not after it: the check is the
+      # repository's own script (`scripts/release.exs check`), so a step that
+      # calls `elixir` on a runner without it dies with `command not found` — on
+      # a tag whose numbers agree, which reads like a version mismatch and is not.
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+          otp-version: ${{ env.OTP_VERSION }}
+
       # The tag and the two files that carry the version are compared before
-      # anything is built: a release whose numbers disagree is a release nobody can
-      # say the version of.
+      # anything is built: a release whose numbers disagree is a release nobody
+      # can say the version of.
       - name: The tag, VERSION and mix.exs agree
         run: |
           tag="${GITHUB_REF_NAME#v}"
@@ -40,10 +49,6 @@ jobs:
           elixir scripts/release.exs check
           test "$tag" = "$file" || { echo "VERSION says $file, the tag says $tag" >&2; exit 1; }
 
-      - uses: erlef/setup-beam@v1
-        with:
-          elixir-version: ${{ env.ELIXIR_VERSION }}
-          otp-version: ${{ env.OTP_VERSION }}
       - uses: dtolnay/rust-toolchain@stable
 
       - run: mix deps.get --only prod
