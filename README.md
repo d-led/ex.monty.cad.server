@@ -159,6 +159,45 @@ placement is not decoration:
 `cad_plugin_list` and `cad_plugin_describe` expose the same thing over the
 protocol, so a model can ask what the cluster has before calling anything.
 
+### What this node offers
+
+Two of the three kinds, and which is which decides what a caller can do with it:
+
+| Module | Kind | Name | Placement |
+| --- | --- | --- | --- |
+| `ExMontyCadServer.Policy.FeatureWalk` | `:motor_policy` | `monty_cad.feature_walk` | `:owner_only` — it holds the open part |
+| `ExMontyCadServer.Experiment` | `:experiment` | `monty_cad.10simobj_surf_agent` | `:anywhere` — a definition is data |
+
+The experiment is Monty's `base_10simobj_surf_agent` with that policy as its motor
+system: the ten similar objects, the config's learning module, its epochs — one
+thing replaced, the thing that decides where to sense next. It exists so that a
+policy holding the geometry can be run beside the policies that have only the
+patch they were just handed.
+
+The same base config is offered as a variation by every plugin host whose library
+can decide: `flyverse_plugin.10simobj_surf_agent` steps it with a spiking
+connectome, `example_plugin.10simobj_surf_agent_one_episode` with a surface
+stepper. All of them write `seed: 42` and no `episodes` key, so the rows of a
+comparison differ in who decides and in nothing else.
+
+Two things a run of this one has to get right:
+
+- **the world is `cad`.** A definition names a config, modules and a seed; a world
+  is not one of those, it is chosen when the run is opened. Started on `mujoco`
+  the sensor would move through a scene of YCB meshes while the policy answered
+  about a plate that is not in it — real actions, decisions about another object,
+  and a record that looks like any other run.
+- **`needs` names the geometry.** The definition declares `[:quiddity, :monty]`, so
+  a cluster only offers it where those can be proven carried. A host still on
+  `ex_monty_plugin` 0.1.1 cannot prove it, and the refusal names the package
+  rather than failing at the first step of a run that looked startable.
+
+What it does not claim is that the geometry recognises better. The measurement is
+in the studio's `docs/cad.md`: under the walk the patch stops being a new
+observation at all (1 of 497 steps against the curvature policy's 37), and a
+planar part still gets no definite pose from it, so the episodes do not conclude
+for a reason upstream of the policy.
+
 The kinds, the placements and `conforms?/1` are `MontyPlugin`'s
 (`ex_monty_plugin`), and this server's `Cluster` is a name for that package's
 registry: one contract for a plugin written here and one written in another

@@ -40,9 +40,20 @@ defmodule ExMontyCadServer.Policy.FeatureWalkTest do
     assert :monty in needs
   end
 
-  test "the cluster finds it by that name", %{policy: pid} do
+  # Asked of *this* node, and that is the whole of the case. A name is
+  # cluster-wide, so while a peer is up (`cluster_across_nodes_test` starts one
+  # that runs this application too) there are two offers of this name, and the
+  # peer's copy cannot serve a part it never opened. `lookup/2` answers with
+  # whichever `:pg` lists first, which is why the module says it is the right
+  # question for `:anywhere` and the wrong one for an `:owner_only` policy: a
+  # cluster-wide ask made this case pass or fail on whether a peer was up.
+  test "the cluster finds it by that name, on this node", %{policy: pid} do
     assert {:ok, %{pid: ^pid, describe: {:ok, %{"name" => "monty_cad.feature_walk"}}}} =
-             ExMontyCadServer.Cluster.lookup(:motor_policy, "monty_cad.feature_walk")
+             ExMontyCadServer.Cluster.lookup(
+               :motor_policy,
+               "monty_cad.feature_walk",
+               node()
+             )
   end
 
   # The part cannot leave this node, so what a caller holds is the walk's

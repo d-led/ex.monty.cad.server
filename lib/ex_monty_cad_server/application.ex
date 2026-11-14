@@ -29,6 +29,11 @@ defmodule ExMontyCadServer.Application do
       # with no part named still offers the policy and refuses the episode with
       # the sentence that names the variable.
       ExMontyCadServer.Policy.FeatureWalk,
+      # The experiment this node offers, which is Monty's ten-similar-objects run
+      # with that policy as its motor system. It is a definition, so it starts
+      # nothing: a run it is asked for is composed by the studio that opens it,
+      # and the world it must be started with is said in the module.
+      ExMontyCadServer.Experiment,
       # Start to serve requests, typically the last entry
       ExMontyCadServerWeb.Endpoint
     ]
