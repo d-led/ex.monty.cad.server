@@ -23,6 +23,27 @@ end
 config :ex_monty_cad_server, ExMontyCadServerWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+# Which database this instance keeps its catalogue in, decided when it boots and
+# not when it is compiled: `ExMontyCadServer.Database` answers from `DATABASE_URL`,
+# and everything that needs a repository — the application, `mix ecto.*` — is
+# given the same answer. A test says its own (Postgres with the sandbox pool, so
+# that cases cannot see each other's rows) and is left alone.
+#
+# This used to live inside the `prod` block, which made `mix phx.server` in `dev`
+# start the SQLite repository with no `database` at all: `Database.repo_module/0`
+# answered SQLite because nothing named a server, and nothing named a file either,
+# so every connection failed with "You must provide a :database". A node is one
+# answer to one question; asking it in one environment only was the bug.
+if config_env() != :test do
+  repo = ExMontyCadServer.Database.repo_module()
+
+  config :ex_monty_cad_server, :repo, repo
+  # What `mix ecto.*` would migrate: the same answer the boot gives, rather than
+  # the Postgres the application was written around.
+  config :ex_monty_cad_server, ecto_repos: [repo]
+  config :ex_monty_cad_server, repo, ExMontyCadServer.Database.repo()
+end
+
 if config_env() == :dev do
   # Reload browser tabs when matching files change.
   config :ex_monty_cad_server, ExMontyCadServerWeb.Endpoint,
@@ -63,16 +84,8 @@ if config_env() == :prod do
 
   # `DATABASE_URL` names a Postgres, SQLite in a file otherwise, so the release
   # runs as one process on a machine with nothing else, and a deployment that has
-  # a database server says where it is. Ecto binds an adapter to a repo when the
-  # repo is compiled, so the choice is between two compiled repos and everything
-  # that needs one — the application, the migrator — is given the same answer.
-  repo = ExMontyCadServer.Database.repo_module()
-
-  config :ex_monty_cad_server, :repo, repo
-  # What `mix ecto.*` would migrate inside the release: the same answer the boot
-  # gives, rather than the Postgres the application was written around.
-  config :ex_monty_cad_server, ecto_repos: [repo]
-  config :ex_monty_cad_server, repo, ExMontyCadServer.Database.repo()
+  # a database server says where it is. That answer is set above for every
+  # environment; what is left here is the endpoint's.
 
   config :ex_monty_cad_server, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 

@@ -223,6 +223,13 @@ It needs the two Rust engines built, which `mix deps.get && mix compile` does.
 `mix ex_monty_cad_server.mcp` refuses to start when one is missing rather than
 failing on the third question.
 
+`mix phx.server` in `dev` is the same server with the same database rule as a
+release — the repository is chosen at boot from `DATABASE_URL`, so it is SQLite in
+`~/Library/Application Support/ex_monty_cad_server/catalogue.db` on a Mac unless
+you name a server. It used to be configured only inside the `prod` block of
+`config/runtime.exs`, which started the SQLite repository with no `database` at
+all and failed every connection with "You must provide a :database".
+
 ### The database
 
 Postgres when `DATABASE_URL` names one, SQLite in a file otherwise — so a machine
