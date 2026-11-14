@@ -6,6 +6,22 @@ defmodule ExMontyCadServer.Mcp.MemoryTools do
   what comes out is the library a run loads. Each tool answers in the shape the
   protocol asks for — a sentence for the model, and the numbers as structured
   content — and a refusal is text saying what to try, never a crash.
+
+  ## How finely a part is sampled
+
+  One tool here writes a memory of **one** part, and it samples at
+  `Training.write/4`'s own dial: two millimetres unless the caller names a
+  `spacing`. That is right for one part and it is not the whole rule — a memory
+  of *several* parts compares them, so each has to be sampled at the same
+  resolution relative to itself, which is `Training.spacing/1` and
+  `Training.write_library/3` (`ex_monty_cad` 0.6.1). With a fixed two millimetres
+  a part five times the size gets the same number of nodes over twenty-five times
+  the area, and the denser graph wins the candidate search — measured, and written
+  up in the studio's `docs/cad.md`.
+
+  A tool that builds a multi-part memory should therefore call
+  `Training.write_library/3` rather than this one repeatedly. It is not here yet,
+  and this note exists so the next person does not have to rediscover the reason.
   """
 
   alias MontyCad.{Percept, Training}
