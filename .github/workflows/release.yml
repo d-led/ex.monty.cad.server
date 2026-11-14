@@ -4,10 +4,12 @@ name: release
 # published anywhere else: this is an application, not a Hex package, and a
 # release is the thing a deployment runs.
 #
-# The archive is built on Linux for Linux, because a release is not portable: the
-# two Rust engines in it are compiled for the machine that built it. A macOS or
-# Windows release is built on macOS or Windows, and this file is where that would
-# be added.
+# One archive per platform, because a release is not portable: the two Rust
+# engines in it are compiled for the machine that built it, so a Linux archive
+# cannot run on macOS and the reverse. `macos-15` is an arm64 runner, which is
+# also the machine this is developed on — a published release nobody can start
+# locally is a release that has not been tried. Windows would be a third entry
+# and is not one: nothing here asks for it yet.
 
 on:
   push:
@@ -23,7 +25,7 @@ env:
   OTP_VERSION: "29.1"
 
 jobs:
-  release:
+  check:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -40,15 +42,50 @@ jobs:
       # The tag and the two files that carry the version are compared before
       # anything is built: a release whose numbers disagree is a release nobody
       # can say the version of.
+      #
+      # Only a tag names a release. A dispatch from a branch names none, and
+      # comparing a branch name to a version failed every dispatch — on a trigger
+      # this file advertises. `release.exs check` still holds VERSION and mix.exs
+      # together on that path.
       - name: The tag, VERSION and mix.exs agree
         run: |
           tag="${GITHUB_REF_NAME#v}"
           file=$(tr -d '[:space:]' < VERSION)
           mix=$(grep -oE '@version "[^"]+"' mix.exs | head -1 | cut -d'"' -f2)
-          echo "tag=$tag VERSION=$file mix.exs=$mix"
+          echo "ref=${GITHUB_REF_NAME} type=${GITHUB_REF_TYPE} tag=$tag VERSION=$file mix.exs=$mix"
           elixir scripts/release.exs check
-          test "$tag" = "$file" || { echo "VERSION says $file, the tag says $tag" >&2; exit 1; }
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            test "$tag" = "$file" || { echo "VERSION says $file, the tag says $tag" >&2; exit 1; }
+          fi
 
+  release:
+    needs: check
+    strategy:
+      # One platform failing is not a reason to withhold the other: a release
+      # with a Linux archive and no macOS one is still better than none, and the
+      # red job says which half is missing.
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            platform: linux-x86_64
+          - runner: macos-15
+            platform: macos-arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # The version names the release on both paths: a tag has one of its own (the
+      # check job proved it equals VERSION), and a dispatch from a branch has none
+      # — without this it would try to publish a release called `main`.
+      - name: The version this release is
+        id: version
+        run: echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+          otp-version: ${{ env.OTP_VERSION }}
       - uses: dtolnay/rust-toolchain@stable
 
       - run: mix deps.get --only prod
@@ -60,9 +97,11 @@ jobs:
       - name: Archive the release
         run: |
           cd _build/prod/rel/ex_monty_cad_server
-          tar czf "$GITHUB_WORKSPACE/ex_monty_cad_server-${{ github.ref_name }}-linux-x86_64.tar.gz" .
+          tar czf "$GITHUB_WORKSPACE/ex_monty_cad_server-v${{ steps.version.outputs.version }}-${{ matrix.platform }}.tar.gz" .
 
       - uses: softprops/action-gh-release@v2
         with:
-          files: ex_monty_cad_server-*.tar.gz
+          tag_name: v${{ steps.version.outputs.version }}
+          files: ex_monty_cad_server-v${{ steps.version.outputs.version }}-${{ matrix.platform }}.tar.gz
+          overwrite: true
           generate_release_notes: true
