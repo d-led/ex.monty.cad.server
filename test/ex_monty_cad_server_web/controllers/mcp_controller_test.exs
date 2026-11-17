@@ -33,18 +33,25 @@ defmodule ExMontyCadServerWeb.McpControllerTest do
       assert reply["error"]["code"] == -32_600
     end
 
-    test "an engine's state outlives the request that filled it", %{conn: conn} do
+    test "two requests are answered by the one session the server keeps", %{conn: conn} do
       fixture = Path.expand("../../fixtures/golden_simple_through_hole.step", __DIR__)
 
       first =
         conn
-        |> post(~p"/mcp", tool("monty_cad_brief", %{"path" => fixture}))
+        |> post(
+          ~p"/mcp",
+          tool("monty_cad_sense", %{
+            "path" => fixture,
+            "point" => [15.0, 0.0, 23.0],
+            "normal" => [0.0, 0.0, 1.0]
+          })
+        )
         |> json_response(200)
 
       assert first["result"]["isError"] == false
 
       # The second call asks the same engine about the same file through a new
-      # request; the part is already open in the session the first call used.
+      # request, and the session the first call used is the one that answers it.
       second =
         conn
         |> post(

@@ -25,7 +25,6 @@ defmodule ExMontyCadServer.Mcp do
   question about the same file does not read it again.
   """
 
-  alias ExMontyCadServer.Mcp.ClusterTools
   alias ExMontyCadServer.Mcp.Tools
 
   @protocol_versions ~w(2025-06-18 2025-03-26 2024-11-05)
@@ -34,8 +33,7 @@ defmodule ExMontyCadServer.Mcp do
   @type state :: %{
           cadmpeg: map(),
           quiddity: map(),
-          monty_cad: map(),
-          cluster: ClusterTools.facts()
+          monty_cad: map()
         }
 
   @doc "The protocol revisions this server speaks, newest first."
@@ -51,12 +49,7 @@ defmodule ExMontyCadServer.Mcp do
       # package has no `fresh/0` yet, which is the one thing this server knows
       # about another module's internals.
       quiddity: %{parts: %{}},
-      monty_cad: %{},
-      # Whether this node is in a cluster, and whether it looks for plugins at
-      # all, are decided at boot and cannot change while it runs — so they are
-      # read once here, and every answer this session gives about the cluster says
-      # the same thing about it.
-      cluster: ClusterTools.facts()
+      monty_cad: %{}
     }
   end
 
@@ -203,19 +196,13 @@ defmodule ExMontyCadServer.Mcp do
     transferred and every loss with its reason. "It opened" and "it opened
     faithfully" are different answers.
 
-    WHAT IS IN IT: monty_cad_brief opens the part and answers what quiddity
+    WHAT IS IN IT: quiddity_features opens the part and answers what it
     recognised — the feature families and how many of each, and the faces no
-    feature claims — which is the sentence a model needs before asking anything
-    else.
+    feature claims.
 
     WHERE THE SENSOR WOULD STAND: monty_cad_sense takes a point and a direction
     and answers what the framework's own sensor module would perceive there: the node
     features a graph memory stores.
-
-    WHICH FEATURE IS WHICH: monty_cad_on_face says what a face belongs to,
-    monty_cad_features_near says what is around a point, and monty_cad_next_feature
-    says what is ahead of one along a direction. Those three are the questions a
-    policy asks before it chooses where to sense next.
 
     A MEMORY: monty_cad_library samples the part's surface, takes that percept at
     every visit, and writes the library a run loads — an object id, a node count,
@@ -225,15 +212,6 @@ defmodule ExMontyCadServer.Mcp do
     THE GEOMETRY UNDERNEATH: the quiddity tools answer a face, a ray, a frame, a
     mesh and the surface samples directly, for a model that wants the numbers
     rather than a summary.
-
-    WHAT A RUN IS MADE OF: cad_plugin_list says which experiments, learning
-    modules and motor policies the cluster offers, and cad_plugin_describe asks
-    one of them about itself — including whether it can be called from another
-    node, which a policy that reads a part cannot. This node offers one of its
-    own: monty_cad.feature_walk, a motor policy that walks a part's surface from
-    feature to feature, and it is `:owner_only` because the walk reads the part
-    here. It steps the part MONTY_CAD_PART names, and while no part is named it is
-    offered and refuses the first episode with the sentence that names it.
 
     Paths are the interface. A native format that keeps parts of itself in files
     beside it is read against its own directory, which is why a file is named

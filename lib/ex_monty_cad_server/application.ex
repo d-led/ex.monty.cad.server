@@ -12,10 +12,6 @@ defmodule ExMontyCadServer.Application do
       {DNSCluster,
        query: Application.get_env(:ex_monty_cad_server, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: ExMontyCadServer.PubSub},
-      # The plugin registry is not here: `MontyPlugin.Application` starts the
-      # `:pg` scope it uses, so this tree would be a second start of the same
-      # process. `PLUGIN_SCOPE` and `PLUGIN_DISCOVERY` decide which scope and
-      # whether there is one at all.
       # The catalogue: the parts this server has made a memory of and the
       # memories it wrote. Whichever repo `DATABASE_URL` chose at boot; it starts
       # before anything that would read or write it.
@@ -24,16 +20,6 @@ defmodule ExMontyCadServer.Application do
       # has opened and the parts quiddity has read. A transport that is a pipe
       # keeps its own state in its own loop; a request cannot.
       ExMontyCadServer.Mcp.Session,
-      # The motor policy this node offers the cluster. It opens the part named by
-      # `MONTY_CAD_PART` when an episode starts rather than at boot, so a node
-      # with no part named still offers the policy and refuses the episode with
-      # the sentence that names the variable.
-      ExMontyCadServer.Policy.FeatureWalk,
-      # The experiment this node offers, which is Monty's ten-similar-objects run
-      # with that policy as its motor system. It is a definition, so it starts
-      # nothing: a run it is asked for is composed by the studio that opens it,
-      # and the world it must be started with is said in the module.
-      ExMontyCadServer.Experiment,
       # Start to serve requests, typically the last entry
       ExMontyCadServerWeb.Endpoint
     ]

@@ -83,11 +83,7 @@ defmodule ExMontyCadServer.MixProject do
       ],
       groups_for_modules: [
         "The protocol": [ExMontyCadServer.Mcp, ExMontyCadServer.Mcp.Tools],
-        "The tools this server adds": [
-          ExMontyCadServer.Mcp.MemoryTools,
-          ExMontyCadServer.Mcp.ClusterTools
-        ],
-        "The cluster": [ExMontyCadServer.Cluster],
+        "The tools this server adds": [ExMontyCadServer.Mcp.MemoryTools],
         "The catalogue": [
           ExMontyCadServer.Catalogue,
           ExMontyCadServer.Catalogue.Part,
@@ -148,21 +144,9 @@ defmodule ExMontyCadServer.MixProject do
       # make and writes the library a run loads.
       {:ex_cadmpeg, "~> 0.1"},
       {:ex_quiddity, "~> 0.1"},
-      # The contract a plugin and a cluster share, and the `:pg` registry that
-      # carries the answer between nodes. The contract is the one thing two
-      # packages have to agree about, so agreement is a version.
-      #
-      # `0.1.2` is the version that publishes what a host *carries*
-      # (`MontyPlugin.Capabilities`), which is the half a plugin's `needs` is
-      # checked against — and the walk this node offers needs `quiddity` and
-      # `monty`, so a host that could not say it carries them would have its own
-      # policy refused as unservable.
-      {:ex_monty_plugin, "~> 0.1.2"},
-      # `0.5` is the version with the feature walk (`MontyCad.Policy.FeatureWalk`)
-      # and with `MontyCad.Inputs`, which is where a part is a name in
-      # `$MONTY_DATA/parts`. `0.6` is the one whose walk is plain data — a list of
-      # visited feature ids rather than a `MapSet` — which is what lets this node
-      # hand a walk to the package's own `state_dict/1`.
+      # `0.5` is the version with `MontyCad.Inputs`, which is where a part is a
+      # name in `$MONTY_DATA/parts`; `0.6` is the one whose percept writes pose
+      # vectors the way Monty's export does, so a CAD memory loads in a run.
       {:ex_monty_cad, "~> 0.6"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}

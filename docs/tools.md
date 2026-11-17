@@ -4,7 +4,7 @@
      server answers `tools/list` with. Do not edit: change the catalogue and
      run the task. -->
 
-19 tools over 4 engines. A model reads them
+13 tools over 3 engines. A model reads them
 from `tools/list` and calls them with `tools/call`; this page is the same
 surface for a person, with the argument schemas spelled out.
 
@@ -23,15 +23,9 @@ surface for a person, with the argument schemas spelled out.
 | `quiddity_sense` | What a sensor sees at a pose | quiddity | reads |
 | `quiddity_export_mjcf` | The part as a MuJoCo scene | quiddity | writes |
 | `quiddity_correspond` | What changed between two revisions | quiddity | reads |
-| `monty_cad_brief` | What is this part? | monty_cad | reads |
-| `monty_cad_features_near` | Which features are near this point? | monty_cad | reads |
-| `monty_cad_next_feature` | What is ahead? | monty_cad | reads |
-| `monty_cad_on_face` | What am I on? | monty_cad | reads |
 | `monty_cad_sense` | What would the sensor perceive here? | monty_cad | reads |
 | `monty_cad_library` | Write the graph memory a run loads | monty_cad | writes |
 | `monty_cad_libraries` | What has this server already learned? | monty_cad | reads |
-| `cad_plugin_list` | What does the cluster offer? | cluster | reads |
-| `cad_plugin_describe` | What is this plugin? | cluster | reads |
 
 
 ## cadmpeg
@@ -169,59 +163,6 @@ Compares two revisions of a part — each a STEP file or a recognition JSON file
 
 **monty_cad** — the memory: a sensed frame as the framework's own percept, and the labelled graph library a run loads.
 
-### `monty_cad_brief` — What is this part?
-
-Opens a STEP part and answers what quiddity recognised in it: the feature families and how many of each, the faces no feature claims, and how many records it could not prove. This is the sentence to read before asking a part anything else.
-
-| argument | type | required | what it is |
-| --- | --- | --- | --- |
-| `path` | string | yes | the part to open |
-
-
-**read-only: it changes nothing.**
-
-### `monty_cad_features_near` — Which features are near this point?
-
-Opens a STEP part, recognises its features, and answers which of them sit within a radius of a point, nearest first — a hole, a boss, a chamfer by name and by distance. The distance is to the anchor the recognition gives a feature (a boss's axis point, for instance), not to its surface, so it orders features rather than measuring gaps.
-
-| argument | type | required | what it is |
-| --- | --- | --- | --- |
-| `path` | string | yes | the part to open |
-| `point` | list of number | yes | the point to measure from, in the part's millimetres |
-| `limit` | integer | no | the most features to answer with (default 10) |
-| `radius` | number | no | how far to look, in millimetres (default 25) |
-
-
-**read-only: it changes nothing.**
-
-### `monty_cad_next_feature` — What is ahead?
-
-Opens a STEP part, recognises its features, and answers which of them lie ahead of a point along a direction — within a cone, nearest first, with the distance and the angle off the direction for each. This is the move a policy makes when it jumps from one feature to the next.
-
-| argument | type | required | what it is |
-| --- | --- | --- | --- |
-| `direction` | list of number | yes | which way the move goes, as three numbers |
-| `path` | string | yes | the part to open |
-| `point` | list of number | yes | where the move starts, in the part's millimetres |
-| `angle` | number | no | how wide a cone counts as ahead, in degrees (default 45) |
-| `limit` | integer | no | the most features to answer with (default 10) |
-| `radius` | number | no | how far to look, in millimetres (default 500) |
-
-
-**read-only: it changes nothing.**
-
-### `monty_cad_on_face` — What am I on?
-
-Opens a STEP part and answers which feature claims a face — the id, the family and the feature's own parameters — or says that no feature claims it, and whether that is the body, a refusal, or a face the recognition could not explain. This is the question a sensor standing on the surface asks.
-
-| argument | type | required | what it is |
-| --- | --- | --- | --- |
-| `face` | integer | yes | the face's own number, from 0 |
-| `path` | string | yes | the part to open |
-
-
-**read-only: it changes nothing.**
-
 ### `monty_cad_sense` — What would the sensor perceive here?
 
 Stands a patch sensor on the part at a point and looks along a direction, and answers what the framework's own observation processor makes of that frame: the node features a graph memory stores, which is the percept a run would have made at the same place.
@@ -263,38 +204,9 @@ Answers the memories this server has written, newest first: the object each is l
 **read-only: it changes nothing.**
 
 
-## cluster
-
-**cluster** — the plugins other nodes offer: experiments, learning modules and motor policies, whether this node answers the call or that one.
-
-### `cad_plugin_list` — What does the cluster offer?
-
-Lists the plugins registered across the cluster — experiments, learning modules and motor policies — with the node that offers each one. Optionally narrowed to one kind.
-
-| argument | type | required | what it is |
-| --- | --- | --- | --- |
-| `kind` | string | no | only this kind |
-
-
-**read-only: it changes nothing.**
-
-### `cad_plugin_describe` — What is this plugin?
-
-Asks one registered plugin what it says about itself: its version, whether it can be called from another node, and which engines it needs. A policy that reads a part must run where the part was opened, and this is where it says so.
-
-| argument | type | required | what it is |
-| --- | --- | --- | --- |
-| `kind` | string | yes | the kind it is registered as |
-| `name` | string | yes | the plugin's name |
-| `node` | string | no | ask on this node — an `:owner_only` plugin can only be called where its state is, and this is how a caller checks that the node holding its part offers it |
-
-
-**read-only: it changes nothing.**
-
-
 ## What the server says about itself
 
 Every `initialize` answer carries this text, before a model has asked anything:
 
-> This server answers questions about a CAD part, and turns one into a graph memory that the Elixir Monty Studio can match against. A FILE: cadmpeg_formats says which formats this build reads and writes, and cadmpeg_inspect opens a path and answers the decode report — what was transferred and every loss with its reason. "It opened" and "it opened faithfully" are different answers. WHAT IS IN IT: monty_cad_brief opens the part and answers what quiddity recognised — the feature families and how many of each, and the faces no feature claims — which is the sentence a model needs before asking anything else. WHERE THE SENSOR WOULD STAND: monty_cad_sense takes a point and a direction and answers what the framework's own sensor module would perceive there: the node features a graph memory stores. WHICH FEATURE IS WHICH: monty_cad_on_face says what a face belongs to, monty_cad_features_near says what is around a point, and monty_cad_next_feature says what is ahead of one along a direction. Those three are the questions a policy asks before it chooses where to sense next. A MEMORY: monty_cad_library samples the part's surface, takes that percept at every visit, and writes the library a run loads — an object id, a node count, and how many nodes each feature family contributed. monty_cad_libraries says what has already been written, so a part is not sampled twice for nothing. THE GEOMETRY UNDERNEATH: the quiddity tools answer a face, a ray, a frame, a mesh and the surface samples directly, for a model that wants the numbers rather than a summary. WHAT A RUN IS MADE OF: cad_plugin_list says which experiments, learning modules and motor policies the cluster offers, and cad_plugin_describe asks one of them about itself — including whether it can be called from another node, which a policy that reads a part cannot. This node offers one of its own: monty_cad.feature_walk, a motor policy that walks a part's surface from feature to feature, and it is `:owner_only` because the walk reads the part here. It steps the part MONTY_CAD_PART names, and while no part is named it is offered and refuses the first episode with the sentence that names it. Paths are the interface. A native format that keeps parts of itself in files beside it is read against its own directory, which is why a file is named rather than bytes.
+> This server answers questions about a CAD part, and turns one into a graph memory that the Elixir Monty Studio can match against. A FILE: cadmpeg_formats says which formats this build reads and writes, and cadmpeg_inspect opens a path and answers the decode report — what was transferred and every loss with its reason. "It opened" and "it opened faithfully" are different answers. WHAT IS IN IT: quiddity_features opens the part and answers what it recognised — the feature families and how many of each, and the faces no feature claims. WHERE THE SENSOR WOULD STAND: monty_cad_sense takes a point and a direction and answers what the framework's own sensor module would perceive there: the node features a graph memory stores. A MEMORY: monty_cad_library samples the part's surface, takes that percept at every visit, and writes the library a run loads — an object id, a node count, and how many nodes each feature family contributed. monty_cad_libraries says what has already been written, so a part is not sampled twice for nothing. THE GEOMETRY UNDERNEATH: the quiddity tools answer a face, a ray, a frame, a mesh and the surface samples directly, for a model that wants the numbers rather than a summary. Paths are the interface. A native format that keeps parts of itself in files beside it is read against its own directory, which is why a file is named rather than bytes.
 

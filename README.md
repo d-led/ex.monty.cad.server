@@ -25,7 +25,6 @@ same release.
 | [hexdocs.pm/ex_quiddity](https://hexdocs.pm/ex_quiddity) | the geometry: recognition, frames, rays, surfaces |
 | [d-led.github.io/ex.monty.cad](https://d-led.github.io/ex.monty.cad/) | the percept and the library, as `main` has them |
 | [hexdocs.pm/ex_monty_cad](https://hexdocs.pm/ex_monty_cad) | the percept and the library a run loads |
-| [hexdocs.pm/ex_monty_plugin](https://hexdocs.pm/ex_monty_plugin) | the plugin contract and the registry this server's cluster is |
 
 The tool reference is not written by hand: `mix ex_monty_cad_server.tools_doc`
 renders it from the same module attributes the server answers with, and CI fails
@@ -55,14 +54,9 @@ From this server, over all three:
 
 | Tool | Answer |
 | --- | --- |
-| `monty_cad_brief` | what quiddity recognised: the feature families and how many of each, and the faces no feature claims |
-| `monty_cad_features_near` | which features sit within a radius of a point, nearest first — the query a policy choosing where to sense next needs |
-| `monty_cad_next_feature` | which features lie ahead along a direction, within a cone, with the distance and the angle off it |
-| `monty_cad_on_face` | which feature claims a face — or that it is body, refused or unexplained |
 | `monty_cad_sense` | the node features the framework's sensor module would store if it stood at a point and looked along a direction |
 | `monty_cad_library` | samples the surface, takes that percept at every visit, and writes the gzipped library a run loads |
 | `monty_cad_libraries` | what this server has already learned, newest first: the object, the part, the node count and the file |
-| `cad_plugin_list`, `cad_plugin_describe` | which experiments, learning modules and motor policies a cluster offers |
 
 ## Two transports, one server
 
@@ -122,92 +116,7 @@ re-read, and nothing on disk depends on the cache.
 
 A B-rep handle is a Rust resource in the memory of the node that opened it: it
 serves every process on that node and cannot be sent to another one. That is why
-paths are the interface and why the placement rule below exists.
-
-## What a cluster offers
-
-A run is made of modules another node has: an experiment, the learning modules it
-steps, the motor policies that decide where to sense next.
-`ExMontyCadServer.Cluster` registers those under names with `:pg` — OTP's
-cluster-wide process group, which is what `Registry` is not: a `Registry` names
-processes on the node that started it.
-
-A plugin is a process that answers `:describe`:
-
-```elixir
-%{
-  "name" => "feature_following",
-  "kind" => :motor_policy,
-  "version" => "0.1.0",
-  # It reads a part's B-rep, and a B-rep handle cannot leave its node.
-  "placement" => :owner_only,
-  "needs" => [:quiddity]
-}
-```
-
-The three kinds are `:experiment`, `:learning_module` and `:motor_policy`, and
-placement is not decoration:
-
-- an experiment or a motor policy is called once per step, so a remote call costs
-  microseconds against the step and the registry can route it;
-- a learning module runs thousands of operations a step over hypotheses and a
-  k-d tree, so what the cluster offers for it is a version and a capability, and
-  the module is compiled in;
-- a policy that consults quiddity must run where the part was opened, which
-  `:owner_only` says and `Cluster.lookup/2` answers with the node.
-
-`cad_plugin_list` and `cad_plugin_describe` expose the same thing over the
-protocol, so a model can ask what the cluster has before calling anything.
-
-### What this node offers
-
-Two of the three kinds, and which is which decides what a caller can do with it:
-
-| Module | Kind | Name | Placement |
-| --- | --- | --- | --- |
-| `ExMontyCadServer.Policy.FeatureWalk` | `:motor_policy` | `monty_cad.feature_walk` | `:owner_only` — it holds the open part |
-| `ExMontyCadServer.Experiment` | `:experiment` | `monty_cad.10simobj_surf_agent` | `:anywhere` — a definition is data |
-
-The experiment is Monty's `base_10simobj_surf_agent` with that policy as its motor
-system: the ten similar objects, the config's learning module, its epochs — one
-thing replaced, the thing that decides where to sense next. It exists so that a
-policy holding the geometry can be run beside the policies that have only the
-patch they were just handed.
-
-The same base config is offered as a variation by every plugin host whose library
-can decide: `flyverse_plugin.10simobj_surf_agent` steps it with a spiking
-connectome, `example_plugin.10simobj_surf_agent_one_episode` with a surface
-stepper. All of them write `seed: 42` and no `episodes` key, so the rows of a
-comparison differ in who decides and in nothing else.
-
-Two things a run of this one has to get right:
-
-- **the world is `cad`.** A definition names a config, modules and a seed; a world
-  is not one of those, it is chosen when the run is opened. Started on `mujoco`
-  the sensor would move through a scene of YCB meshes while the policy answered
-  about a plate that is not in it — real actions, decisions about another object,
-  and a record that looks like any other run.
-- **`needs` names the geometry.** The definition declares `[:quiddity, :monty]`, so
-  a cluster only offers it where those can be proven carried. A host still on
-  `ex_monty_plugin` 0.1.1 cannot prove it, and the refusal names the package
-  rather than failing at the first step of a run that looked startable.
-
-What it does not claim is that the geometry recognises better. The measurement is
-in the studio's `docs/cad.md`: under the walk the patch stops being a new
-observation at all (1 of 497 steps against the curvature policy's 37), and a
-planar part still gets no definite pose from it, so the episodes do not conclude
-for a reason upstream of the policy.
-
-The kinds, the placements and `conforms?/1` are `MontyPlugin`'s
-(`ex_monty_plugin`), and this server's `Cluster` is a name for that package's
-registry: one contract for a plugin written here and one written in another
-repository.
-
-A list is worth what the node answering it can see, so the answer says which state
-it is in — discovery switched off (`PLUGIN_DISCOVERY=none`), a node that was never
-in a cluster (`:nonode@nohost`, with `NODE_NAME` and `NODE_COOKIE` named as the
-fix), or a cluster with a count. `0 plugin(s)` alone meant all three, and read as
-"nothing is offered anywhere".
+paths are the interface.
 
 ## Running it
 
@@ -249,19 +158,17 @@ docker run --rm -d --name ex-monty-cad-db -p 5432:5432 \
   -e POSTGRES_PASSWORD=postgres postgres:17
 ```
 
-### The tests, and the two that need a second node
+### The tests
 
 ```sh
-mix test                                                    # 45 tests
-elixir --name cad@127.0.0.1 -S mix test --only distributed   # the other 2
+mix test
 ```
 
-The cluster tests start a second node with `:peer` and offer a plugin on it,
-because "visible on every node" is a claim worth failing on. A peer needs a
-distributed VM, and `mix test` does not start one, so they are tagged
-`:distributed` and a plain run excludes them — the second command is how to run
-them, and what CI does. No `--cookie` on that line: the peer inherits the default
-one, and a cookie on one side only is a handshake refused.
+The protocol is driven the way a client drives it — one JSON-RPC message in,
+its reply out — so a test is a conversation rather than a call into a private
+function. `mix ex_monty_cad_server.tools_doc` regenerates `docs/tools.md` from
+the catalogue, and a test fails when the committed page and the catalogue
+disagree.
 
 ### As a release
 
@@ -318,9 +225,6 @@ Environment, and what each one is for:
 | `DATA_DIR` | the directory a container mounts a volume at (default `/app/data`) |
 | `PHX_SERVER` | set by `bin/server`: start the endpoint. `bin/mcp` leaves it unset and serves nothing but the pipe |
 | `SECRET_KEY_BASE` | signs cookies; required only when the endpoint serves |
-| `NODE_NAME` | the node's name, for a deployment that is one node of several — this is what makes plugins cluster-wide (`NODE_COOKIE` is its companion; a release spells them `RELEASE_NODE`/`RELEASE_COOKIE`) |
-| `PLUGIN_SCOPE` | the `:pg` scope plugins register in (default `monty_plugins`) — shared with every other node of the estate, so a policy offered by a Monty studio node and one offered here are the same thing to a caller |
-| `PLUGIN_DISCOVERY` | `pg` (default) or `none`: `none` takes this node out of the cluster, and `cad_plugin_list` says so rather than looking empty |
 | `PORT` | the endpoint's port (default 4000) |
 
 ### In a container

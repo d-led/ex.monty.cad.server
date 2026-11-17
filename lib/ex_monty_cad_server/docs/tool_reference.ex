@@ -24,10 +24,7 @@ defmodule ExMontyCadServer.Docs.ToolReference do
     "monty_cad" =>
       "the memory: a sensed frame as the framework's own percept, and the labelled " <>
         "graph library " <>
-        "a run loads",
-    "cluster" =>
-      "the plugins other nodes offer: experiments, learning modules and motor policies, " <>
-        "whether this node answers the call or that one"
+        "a run loads"
   }
 
   @doc "The whole page, as Markdown."

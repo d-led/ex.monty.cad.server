@@ -15,15 +15,14 @@ defmodule ExMontyCadServer.Mcp.Tools do
   """
 
   alias ExMontyCadServer.Mcp
-  alias ExMontyCadServer.Mcp.{ClusterTools, MemoryTools}
+  alias ExMontyCadServer.Mcp.MemoryTools
 
   @doc "The tools of every engine, as the protocol wants them listed."
   @spec catalogue() :: [map()]
   def catalogue do
     Cadmpeg.Mcp.Tools.catalogue() ++
       Quiddity.Mcp.Tools.catalogue() ++
-      MemoryTools.catalogue() ++
-      ClusterTools.catalogue()
+      MemoryTools.catalogue()
   end
 
   @doc "Every tool name this server answers."
@@ -76,7 +75,6 @@ defmodule ExMontyCadServer.Mcp.Tools do
   def engines do
     [
       monty_cad: MemoryTools,
-      cluster: ClusterTools,
       quiddity: Quiddity.Mcp.Tools,
       cadmpeg: Cadmpeg.Mcp.Tools
     ]

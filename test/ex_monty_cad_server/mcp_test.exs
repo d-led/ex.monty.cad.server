@@ -53,7 +53,7 @@ defmodule ExMontyCadServer.McpTest do
 
       assert "cadmpeg_formats" in names
       assert "quiddity_part" in names
-      assert "monty_cad_brief" in names
+      assert "monty_cad_sense" in names
     end
 
     test "what cadmpeg reads is a fact about this build" do
@@ -68,24 +68,7 @@ defmodule ExMontyCadServer.McpTest do
 
       text = reply["result"]["content"] |> hd() |> Map.fetch!("text")
       assert text =~ "`cad_nothing` is not one of the tools"
-      assert text =~ "monty_cad_brief"
-    end
-  end
-
-  describe "the part, named" do
-    test "the brief counts the faces and says what the features are" do
-      {reply, _state} =
-        request("tools/call", %{
-          "name" => "monty_cad_brief",
-          "arguments" => %{"path" => @fixture}
-        })
-
-      result = reply["result"]
-      assert result["isError"] == false
-
-      assert result["structuredContent"]["faces"] > 0
-      assert result["structuredContent"]["families"] |> Map.keys() |> length() > 0
-      assert text_of(result) =~ "faces"
+      assert text =~ "monty_cad_sense"
     end
   end
 
@@ -171,240 +154,6 @@ defmodule ExMontyCadServer.McpTest do
     end
   end
 
-  describe "the cluster" do
-    test "a node that takes no part in one says so rather than looking empty" do
-      System.put_env("PLUGIN_DISCOVERY", "none")
-      on_exit(fn -> System.delete_env("PLUGIN_DISCOVERY") end)
-
-      {reply, _state} = call_tool("cad_plugin_list", %{})
-
-      text = text_of(reply["result"])
-      assert text =~ "plugin discovery is off on this node"
-      assert text =~ "PLUGIN_DISCOVERY"
-      assert reply["result"]["structuredContent"]["providers"] == []
-    end
-
-    # This VM may or may not be distributed — the test helper asks for one, and CI
-    # says no — so the facts are stated rather than provoked. "0 plugins" read as
-    # "nothing is offered anywhere" until a release over stdio said it on a node
-    # that had never been in a cluster at all.
-    test "a node outside a cluster still names what it has, and says it has no cluster" do
-      {:ok, _pid} =
-        ExMontyCadServer.TestPlugin.registered(:motor_policy, "follow_chamfers",
-          describe: %{"name" => "follow_chamfers", "kind" => :motor_policy}
-        )
-
-      {reply, _state} = call_tool("cad_plugin_list", %{}, on_a_node(clustered: false))
-
-      text = text_of(reply["result"])
-      assert text =~ "motor_policy:"
-      assert text =~ "follow_chamfers"
-      assert text =~ "not part of a cluster"
-      assert text =~ "NODE_NAME"
-    end
-
-    test "a plugin that is not here is not said to be nowhere, when this node cannot look" do
-      arguments = %{"name" => "elsewhere", "kind" => "motor_policy"}
-
-      {reply, _state} = call_tool("cad_plugin_describe", arguments, on_a_node(clustered: false))
-      assert text_of(reply["result"]) =~ "not part of a cluster"
-
-      {reply, _state} = call_tool("cad_plugin_describe", arguments, on_a_node(clustered: true))
-      refute text_of(reply["result"]) =~ "not part of a cluster"
-    end
-
-    test "a plugin can be asked about on a named node, which is what an owner-only one needs" do
-      {:ok, _pid} =
-        ExMontyCadServer.TestPlugin.registered(:motor_policy, "follow_chamfers",
-          describe: %{"name" => "follow_chamfers", "kind" => :motor_policy}
-        )
-
-      arguments = %{
-        "name" => "follow_chamfers",
-        "kind" => "motor_policy",
-        "node" => to_string(node())
-      }
-
-      {reply, _state} = call_tool("cad_plugin_describe", arguments)
-
-      assert text_of(reply["result"]) =~ "follow_chamfers"
-      assert text_of(reply["result"]) =~ to_string(node())
-    end
-
-    test "a node that is not connected is refused, with the ones that are" do
-      arguments = %{
-        "name" => "follow_chamfers",
-        "kind" => "motor_policy",
-        "node" => "there@nohost"
-      }
-
-      {reply, _state} = call_tool("cad_plugin_describe", arguments)
-
-      text = text_of(reply["result"])
-      assert text =~ "no node called \"there@nohost\" is connected"
-      assert text =~ to_string(node())
-    end
-
-    test "a node in a cluster counts what it offers" do
-      {reply, _state} = call_tool("cad_plugin_list", %{}, on_a_node(clustered: true))
-
-      assert text_of(reply["result"]) =~ "on this cluster"
-    end
-
-    test "names a plugin whose answer cannot be used as such" do
-      description = %{"name" => "nameless", "kind" => :motor_policy, "placement" => :owner_only}
-
-      {:ok, _pid} =
-        ExMontyCadServer.TestPlugin.registered(:motor_policy, "nameless", describe: description)
-
-      {reply, _state} = call_tool("cad_plugin_list", %{"kind" => "motor_policy"})
-
-      assert text_of(reply["result"]) =~ "nameless (cannot be used)"
-
-      {reply, _state} =
-        call_tool("cad_plugin_describe", %{"name" => "nameless", "kind" => "motor_policy"})
-
-      assert text_of(reply["result"]) =~ "it cannot be used"
-      assert text_of(reply["result"]) =~ "`version` is missing"
-    end
-
-    test "lists what is offered, by kind" do
-      {:ok, _pid} = ExMontyCadServer.TestPlugin.registered(:motor_policy, "follow_chamfers")
-
-      {reply, _state} =
-        request("tools/call", %{"name" => "cad_plugin_list", "arguments" => %{}})
-
-      result = reply["result"]
-      assert result["isError"] == false
-      assert text_of(result) =~ "motor_policy:"
-      assert text_of(result) =~ "follow_chamfers"
-    end
-
-    test "describes one plugin, including where it may run" do
-      {:ok, _pid} = ExMontyCadServer.TestPlugin.registered(:motor_policy, "follow_axes")
-
-      {reply, _state} =
-        request("tools/call", %{
-          "name" => "cad_plugin_describe",
-          "arguments" => %{"name" => "follow_axes", "kind" => "motor_policy"}
-        })
-
-      result = reply["result"]
-      assert result["isError"] == false
-      assert result["structuredContent"]["describe"]["placement"] == "owner_only"
-    end
-
-    test "asks for a kind when describing, because a name can be offered twice" do
-      {reply, _state} =
-        request("tools/call", %{
-          "name" => "cad_plugin_describe",
-          "arguments" => %{"name" => "follow_axes"}
-        })
-
-      assert reply["result"]["isError"] == true
-      assert text_of(reply["result"]) =~ "`kind` is required"
-    end
-  end
-
-  describe "the features near a point" do
-    test "are named, nearest first, with how far each one is" do
-      {reply, _state} = features_near(30.0)
-
-      result = reply["result"]
-      assert result["isError"] == false
-      assert [first | _rest] = result["structuredContent"]["features"]
-      assert first["id"] == "bosses/0"
-      assert first["family"] == "bosses"
-      # The boss's axis point is ten millimetres below the top the sensor is on.
-      assert_in_delta first["distance"], 10.0, 0.01
-      assert text_of(result) =~ "bosses/0 (bosses)"
-    end
-
-    test "a radius that reaches nothing says so instead of answering with something" do
-      {reply, _state} = features_near(0.001)
-
-      result = reply["result"]
-      assert result["isError"] == false
-      assert result["structuredContent"]["features"] == []
-      assert text_of(result) =~ "none of them"
-    end
-  end
-
-  describe "what is ahead" do
-    test "names the feature in the direction of travel" do
-      {reply, _state} = next_feature([0.0, 0.0, 1.0])
-
-      result = reply["result"]
-      assert result["isError"] == false
-      assert [feature] = result["structuredContent"]["features"]
-      assert feature["id"] == "bosses/0"
-      assert_in_delta feature["distance"], 13.0, 0.01
-      assert_in_delta feature["angle"], 0.0, 0.01
-    end
-
-    test "looking the other way finds nothing rather than the nearest thing behind" do
-      {reply, _state} = next_feature([0.0, 0.0, -1.0])
-
-      result = reply["result"]
-      assert result["structuredContent"]["features"] == []
-      assert text_of(result) =~ "none of them"
-    end
-
-    test "a direction of nought is refused, because a cone around it is everywhere" do
-      {reply, _state} = next_feature([0.0, 0.0, 0.0])
-
-      assert reply["result"]["isError"] == true
-      assert text_of(reply["result"]) =~ "nought has none"
-    end
-  end
-
-  describe "what a face is" do
-    test "a face a feature claims is named, with its family" do
-      {reply, _state} = on_face(7)
-
-      result = reply["result"]
-      assert result["isError"] == false
-      assert result["structuredContent"]["feature"] == "bosses/0"
-      assert result["structuredContent"]["family"] == "bosses"
-    end
-
-    test "a face no feature claims says which kind of unclaimed it is" do
-      {reply, _state} = on_face(8)
-
-      result = reply["result"]
-      assert result["structuredContent"]["feature"] == nil
-      assert result["structuredContent"]["owner"] == "unexplained"
-    end
-
-    test "a face the part does not have is refused, with the range that does" do
-      {reply, _state} = on_face(99)
-
-      assert reply["result"]["isError"] == true
-      assert text_of(reply["result"]) =~ "`face` is one of 0..8"
-    end
-  end
-
-  defp next_feature(direction) do
-    request("tools/call", %{
-      "name" => "monty_cad_next_feature",
-      "arguments" => %{"path" => @fixture, "point" => [15.0, 0.0, 0.0], "direction" => direction}
-    })
-  end
-
-  defp on_face(face) do
-    request("tools/call", %{
-      "name" => "monty_cad_on_face",
-      "arguments" => %{"path" => @fixture, "face" => face}
-    })
-  end
-
-  defp features_near(radius) do
-    request("tools/call", %{
-      "name" => "monty_cad_features_near",
-      "arguments" => %{"path" => @fixture, "point" => @boss_top, "radius" => radius}
-    })
-  end
-
   defp sense do
     request("tools/call", %{
       "name" => "monty_cad_sense",
@@ -423,12 +172,6 @@ defmodule ExMontyCadServer.McpTest do
 
   # A tool call with the session it happens in, which a second call in the same
   # test needs: what the first one learned is state, not a database lookup.
-  # The two facts about this node that a session reads once: a test states them
-  # rather than provoking a VM that is not distributed.
-  defp on_a_node(clustered: clustered) do
-    %{Mcp.fresh() | cluster: %{discovery: true, discovery_var: nil, clustered: clustered}}
-  end
-
   defp call_tool(name, arguments, state \\ Mcp.fresh()) do
     message = %{
       "jsonrpc" => "2.0",
