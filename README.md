@@ -366,3 +366,30 @@ over it answers a question about density.
   `ex_tbp_monty_core`. This server is the join between a drawing and a memory.
 - Not a training run either: `monty_cad_library` writes the library a run loads;
   running the experiment is the studio's job, not this server's.
+
+## Citation
+
+One of the three engines is Monty, so the papers that describe Monty are the
+ones to cite. The server is citable too: [`CITATION.cff`](CITATION.cff) is what
+GitHub's *Cite this repository* button reads, and Zenodo mints a DOI for each
+release.
+
+```bibtex
+@article{clay2024thousandbrains,
+  title   = {The Thousand Brains Project: A New Paradigm for Sensorimotor Intelligence},
+  author  = {Clay, Viviane and Leadholm, Niels and Hawkins, Jeff},
+  journal = {arXiv preprint arXiv:2412.18354},
+  year    = {2024},
+  url     = {https://arxiv.org/abs/2412.18354}
+}
+
+@article{hawkins2019framework,
+  title   = {A Framework for Intelligence and Cortical Function Based on Grid Cells in the Neocortex},
+  author  = {Hawkins, Jeff and Lewis, Marcus and Klukas, Mirko and Purdy, Scott and Ahmad, Subutai},
+  journal = {Frontiers in Neural Circuits},
+  volume  = {12},
+  pages   = {121},
+  year    = {2019},
+  doi     = {10.3389/fncir.2018.00121}
+}
+```

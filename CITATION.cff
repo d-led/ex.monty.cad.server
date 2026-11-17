@@ -1,0 +1,59 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the papers it follows."
+title: "ex_monty_cad_server: a Model Context Protocol server for CAD"
+type: software
+authors:
+  - family-names: Ledentsov
+    given-names: Dmitry
+    website: "https://github.com/d-led"
+repository-code: "https://github.com/d-led/ex.monty.cad.server"
+license: MPL-2.0
+version: "0.2.0"
+date-released: "2026-11-14"
+abstract: >-
+  A Model Context Protocol server over three engines that answer different
+  questions about the same CAD part: cadmpeg for what is in the file, quiddity
+  for the features and the geometry where a sensor would stand, and Elixir
+  Monty Studio for what the framework's observation processor would perceive
+  there.
+keywords:
+  - thousand brains
+  - Monty
+  - CAD
+  - Model Context Protocol
+  - MCP
+  - Elixir
+# Zenodo mints a DOI for each GitHub release; add it as `doi:` once the first
+# release has been archived.
+references:
+  - type: article
+    title: "The Thousand Brains Project: A New Paradigm for Sensorimotor Intelligence"
+    authors:
+      - family-names: Clay
+        given-names: Viviane
+      - family-names: Leadholm
+        given-names: Niels
+      - family-names: Hawkins
+        given-names: Jeff
+    journal: arXiv
+    year: 2024
+    url: "https://arxiv.org/abs/2412.18354"
+  - type: article
+    title: "A Framework for Intelligence and Cortical Function Based on Grid Cells in the Neocortex"
+    authors:
+      - family-names: Hawkins
+        given-names: Jeff
+      - family-names: Lewis
+        given-names: Marcus
+      - family-names: Klukas
+        given-names: Mirko
+      - family-names: Purdy
+        given-names: Scott
+      - family-names: Ahmad
+        given-names: Subutai
+    journal: Frontiers in Neural Circuits
+    volume: 12
+    start: 121
+    year: 2019
+    doi: 10.3389/fncir.2018.00121
+    url: "https://doi.org/10.3389/fncir.2018.00121"
