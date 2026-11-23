@@ -193,8 +193,8 @@ GitHub release; the tag, `VERSION` and `mix.exs` have to agree or the job refuse
 An archive is not portable — the two Rust engines in it are compiled for the
 machine that built it — so the workflow builds two:
 
-    ex_monty_cad_server-v0.2.0-linux-x86_64.tar.gz    # ubuntu-24.04
-    ex_monty_cad_server-v0.2.0-macos-arm64.tar.gz     # macos-15, an arm64 runner
+    ex_monty_cad_server-v<version>-linux-x86_64.tar.gz    # ubuntu-24.04
+    ex_monty_cad_server-v<version>-macos-arm64.tar.gz     # macos-15, an arm64 runner
 
 Both are attached by the same run, and one platform failing does not withhold the
 other. To rebuild the archives for the version already in `VERSION` — without
